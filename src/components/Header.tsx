@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Search, ShoppingBag, User, LogOut } from 'lucide-react';
 import { AuthDialog } from './auth/AuthDialog';
+import { CartDrawer } from './CartDrawer';
+import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 export const Header = () => {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const { cart, toggleCart } = useCart();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -83,33 +86,32 @@ export const Header = () => {
                 <Search className="h-5 w-5" />
               </Button>
               
+              <Button variant="ghost" size="icon" className="relative" onClick={toggleCart}>
+                <ShoppingBag className="h-5 w-5" />
+                {cart.itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-garamond font-bold">
+                    {cart.itemCount > 9 ? '9+' : cart.itemCount}
+                  </span>
+                )}
+              </Button>
+              
               {user ? (
-                <>
-                  <Button variant="ghost" size="icon">
-                    <ShoppingBag className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={handleSignOut}
-                    className="hover:text-accent"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </Button>
-                </>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={handleSignOut}
+                  className="hover:text-accent"
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
               ) : (
-                <>
-                  <Button variant="ghost" size="icon">
-                    <ShoppingBag className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => setAuthDialogOpen(true)}
-                  >
-                    <User className="h-5 w-5" />
-                  </Button>
-                </>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setAuthDialogOpen(true)}
+                >
+                  <User className="h-5 w-5" />
+                </Button>
               )}
             </div>
           </div>
@@ -120,6 +122,7 @@ export const Header = () => {
         open={authDialogOpen} 
         onOpenChange={setAuthDialogOpen} 
       />
+      <CartDrawer />
     </>
   );
 };

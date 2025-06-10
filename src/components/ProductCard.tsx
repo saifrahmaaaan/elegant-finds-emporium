@@ -2,6 +2,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Product } from '@/types/shopify';
+import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
   product: Product;
@@ -9,6 +11,9 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onClick }: ProductCardProps) => {
+  const { addToCart } = useCart();
+  const { toast } = useToast();
+
   const formatPrice = (price: number) => {
     // Use the variant currency if available, otherwise default to USD
     const currencyCode = product.variants.length > 0 
@@ -21,6 +26,27 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const variant = product.variants[0]; // Use first variant for quick add
+    
+    addToCart({
+      productId: product.id,
+      variantId: variant.id,
+      productTitle: product.name,
+      variantTitle: variant.title,
+      price: variant.price,
+      currencyCode: variant.currencyCode,
+      image: product.image,
+    });
+
+    toast({
+      title: 'Added to cart',
+      description: `${product.name} has been added to your cart.`,
+    });
   };
 
   return (
@@ -59,16 +85,26 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
           )}
         </div>
         
-        <Button 
-          className="w-full luxury-gold-gradient text-black hover:opacity-90 transition-opacity font-garamond"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-        >
-          View Details
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            className="flex-1 luxury-gold-gradient text-black hover:opacity-90 transition-opacity font-garamond"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+          >
+            View Details
+          </Button>
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={handleAddToCart}
+            className="px-3"
+          >
+            Add
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

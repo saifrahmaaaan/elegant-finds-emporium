@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '@/types/shopify';
+import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -14,6 +16,8 @@ interface ProductDetailModalProps {
 export const ProductDetailModal = ({ product, open, onOpenChange }: ProductDetailModalProps) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState(0);
+  const { addToCart } = useCart();
+  const { toast } = useToast();
 
   if (!product) return null;
 
@@ -36,6 +40,27 @@ export const ProductDetailModal = ({ product, open, onOpenChange }: ProductDetai
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
+  };
+
+  const handleAddToCart = () => {
+    const variant = product.variants[selectedVariant];
+    
+    addToCart({
+      productId: product.id,
+      variantId: variant.id,
+      productTitle: product.name,
+      variantTitle: variant.title,
+      price: variant.price,
+      currencyCode: variant.currencyCode,
+      image: product.image,
+    });
+
+    toast({
+      title: 'Added to cart',
+      description: `${product.name} (${variant.title}) has been added to your cart.`,
+    });
+
+    onOpenChange(false);
   };
 
   return (
@@ -163,6 +188,7 @@ export const ProductDetailModal = ({ product, open, onOpenChange }: ProductDetai
               <Button 
                 className="w-full luxury-gold-gradient text-black hover:opacity-90 transition-opacity font-garamond py-3"
                 size="lg"
+                onClick={handleAddToCart}
               >
                 Add to Cart
               </Button>
