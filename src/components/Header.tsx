@@ -1,61 +1,125 @@
 
-import { useState } from 'react';
-import { Search, User, ShoppingBag } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { AuthDialog } from '@/components/auth/AuthDialog';
+import { Search, ShoppingBag, User, LogOut } from 'lucide-react';
+import { AuthDialog } from './auth/AuthDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { User as SupabaseUser } from '@supabase/supabase-js';
+import { useToast } from '@/hooks/use-toast';
 
 export const Header = () => {
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to sign out. Please try again.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Signed Out',
+          description: 'You have been successfully signed out.',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
-    <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <h1 className="text-2xl font-playfair font-bold luxury-text-gradient">
+    <>
+      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <div className="text-2xl font-playfair font-bold luxury-text-gradient">
                 EH
-              </h1>
+              </div>
             </div>
-          </div>
 
-          {/* Navigation */}
-          <nav className="hidden md:block">
-            <div className="flex items-baseline space-x-8">
-              <a href="#" className="text-foreground hover:text-accent transition-colors duration-200 font-garamond">
+            {/* Navigation */}
+            <nav className="hidden md:flex items-center space-x-8">
+              <Button variant="ghost" className="font-garamond hover:text-accent">
                 Collections
-              </a>
-              <a href="#" className="text-foreground hover:text-accent transition-colors duration-200 font-garamond">
+              </Button>
+              <Button variant="ghost" className="font-garamond hover:text-accent">
                 New Arrivals
-              </a>
-              <a href="#" className="text-foreground hover:text-accent transition-colors duration-200 font-garamond">
+              </Button>
+              <Button variant="ghost" className="font-garamond hover:text-accent">
                 Designers
-              </a>
-            </div>
-          </nav>
+              </Button>
+            </nav>
 
-          {/* Right Icons */}
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="hover:bg-accent/10">
-              <Search className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="hover:bg-accent/10"
-              onClick={() => setIsAuthOpen(true)}
-            >
-              <User className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="hover:bg-accent/10">
-              <ShoppingBag className="h-5 w-5" />
-            </Button>
+            {/* Right side icons */}
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon">
+                <Search className="h-5 w-5" />
+              </Button>
+              
+              {user ? (
+                <>
+                  <Button variant="ghost" size="icon">
+                    <ShoppingBag className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={handleSignOut}
+                    className="hover:text-accent"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" size="icon">
+                    <ShoppingBag className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setAuthDialogOpen(true)}
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} />
-    </header>
+      <AuthDialog 
+        open={authDialogOpen} 
+        onOpenChange={setAuthDialogOpen} 
+      />
+    </>
   );
 };
