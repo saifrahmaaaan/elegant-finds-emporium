@@ -2,14 +2,17 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/CartContext';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Minus, Plus, Trash2, Bug } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const CartDrawer = () => {
   const { cart, removeFromCart, updateQuantity, toggleCart, clearCart } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const formatPrice = (price: number, currencyCode: string = 'USD') => {
@@ -21,16 +24,50 @@ export const CartDrawer = () => {
     }).format(price);
   };
 
+  const showDebugInfo = () => {
+    const lineItems = cart.items.map(item => ({
+      variantId: item.variantId,
+      quantity: item.quantity,
+    }));
+    
+    setDebugInfo({
+      lineItems,
+      totalItems: cart.itemCount,
+      cartTotal: cart.total,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log('Debug Info - Cart Line Items:', lineItems);
+    console.log('Debug Info - Full Cart State:', cart);
+  };
+
   const handleCheckout = async () => {
-    if (cart.items.length === 0) return;
+    if (cart.items.length === 0) {
+      toast({
+        title: 'Cart Empty',
+        description: 'Please add items to your cart before checkout.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsCheckingOut(true);
+    setCheckoutError(null);
     
     try {
-      const lineItems = cart.items.map(item => ({
-        variantId: item.variantId,
-        quantity: item.quantity,
-      }));
+      // Prepare line items with validation
+      const lineItems = cart.items
+        .filter(item => item.variantId && item.quantity > 0) // Only valid items
+        .map(item => ({
+          variantId: item.variantId,
+          quantity: item.quantity,
+        }));
+
+      if (lineItems.length === 0) {
+        throw new Error('No valid items found in cart');
+      }
+
+      console.log('Sending checkout request with line items:', lineItems);
 
       const checkoutMutation = `
         mutation checkoutCreate($input: CheckoutCreateInput!) {
@@ -38,10 +75,29 @@ export const CartDrawer = () => {
             checkout {
               id
               webUrl
+              totalPrice {
+                amount
+                currencyCode
+              }
+              lineItems(first: 50) {
+                edges {
+                  node {
+                    id
+                    title
+                    quantity
+                    variant {
+                      id
+                      title
+                      available
+                    }
+                  }
+                }
+              }
             }
             checkoutUserErrors {
               field
               message
+              code
             }
           }
         }
@@ -58,27 +114,59 @@ export const CartDrawer = () => {
         },
       });
 
+      console.log('Shopify API Response:', data);
+
       if (error) {
-        throw new Error('Failed to create checkout');
+        console.error('Supabase function error:', error);
+        throw new Error(`Failed to create checkout: ${error.message}`);
+      }
+
+      if (!data || !data.data) {
+        console.error('Invalid response structure:', data);
+        throw new Error('Invalid response from Shopify API');
       }
 
       const checkoutData = data.data.checkoutCreate;
       
-      if (checkoutData.checkoutUserErrors.length > 0) {
-        throw new Error(checkoutData.checkoutUserErrors[0].message);
+      // Check for Shopify-specific errors
+      if (checkoutData.checkoutUserErrors && checkoutData.checkoutUserErrors.length > 0) {
+        const errorMessages = checkoutData.checkoutUserErrors
+          .map((err: any) => `${err.field ? err.field + ': ' : ''}${err.message}`)
+          .join(', ');
+        
+        console.error('Shopify checkout errors:', checkoutData.checkoutUserErrors);
+        setCheckoutError(`Checkout failed: ${errorMessages}`);
+        throw new Error(errorMessages);
       }
 
+      if (!checkoutData.checkout || !checkoutData.checkout.webUrl) {
+        console.error('No checkout URL received:', checkoutData);
+        throw new Error('No checkout URL received from Shopify');
+      }
+
+      console.log('Checkout created successfully:', checkoutData.checkout);
+      
+      // Show success message
+      toast({
+        title: 'Checkout Created',
+        description: 'Redirecting to Shopify checkout...',
+      });
+
+      // Clear cart before redirect
+      clearCart();
+      
       // Redirect to Shopify checkout
       window.location.href = checkoutData.checkout.webUrl;
       
-      // Clear cart after successful checkout creation
-      clearCart();
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout error:', error);
+      const errorMessage = error.message || 'An unexpected error occurred during checkout';
+      
+      setCheckoutError(errorMessage);
+      
       toast({
         title: 'Checkout Error',
-        description: 'Failed to create checkout. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -134,6 +222,9 @@ export const CartDrawer = () => {
                               {item.variantTitle}
                             </p>
                           )}
+                          <p className="text-xs text-muted-foreground font-mono">
+                            ID: {item.variantId}
+                          </p>
                           <p className="font-playfair font-bold text-sm">
                             {formatPrice(item.price, item.currencyCode)}
                           </p>
@@ -177,6 +268,24 @@ export const CartDrawer = () => {
                 </div>
               </div>
 
+              {checkoutError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription className="text-sm">
+                    {checkoutError}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {debugInfo && (
+                <Alert className="mb-4">
+                  <AlertDescription className="text-xs font-mono">
+                    <strong>Debug Info:</strong><br />
+                    Line Items: {JSON.stringify(debugInfo.lineItems, null, 2)}<br />
+                    Total: {debugInfo.totalItems} items, ${debugInfo.cartTotal}
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="border-t pt-6 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="font-playfair font-bold text-lg">Total:</span>
@@ -184,6 +293,16 @@ export const CartDrawer = () => {
                     {formatPrice(cart.total, cart.items[0]?.currencyCode)}
                   </span>
                 </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={showDebugInfo}
+                  className="w-full mb-2"
+                >
+                  <Bug className="h-4 w-4 mr-2" />
+                  Show Debug Info
+                </Button>
                 
                 <Button
                   className="w-full luxury-gold-gradient text-black hover:opacity-90 transition-opacity font-garamond py-3"
