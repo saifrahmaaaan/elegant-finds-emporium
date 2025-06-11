@@ -9,6 +9,11 @@ export default function WishlistButton({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
+  // Ensure we store clean product IDs with Shopify prefix
+  const cleanProductId = productId.startsWith('gid://shopify/Product/') 
+    ? productId 
+    : `gid://shopify/Product/${productId}`;
+
   useEffect(() => {
     const checkWishlist = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -18,12 +23,12 @@ export default function WishlistButton({ productId }: { productId: string }) {
         .from('wishlist')
         .select('*', { count: 'exact' })
         .eq('user_id', user.id)
-        .eq('product_id', productId)
+        .eq('product_id', cleanProductId)
 
       setIsWishlisted(!!count)
     }
     checkWishlist()
-  }, [productId])
+  }, [cleanProductId])
 
   const handleWishlist = async () => {
     setLoading(true)
@@ -43,11 +48,14 @@ export default function WishlistButton({ productId }: { productId: string }) {
           .from('wishlist')
           .delete()
           .eq('user_id', user.id)
-          .eq('product_id', productId)
+          .eq('product_id', cleanProductId)
       } else {
         await supabase
           .from('wishlist')
-          .insert([{ user_id: user.id, product_id: productId }])
+          .insert([{ 
+            user_id: user.id, 
+            product_id: cleanProductId 
+          }])
       }
       setIsWishlisted(!isWishlisted)
     } catch (error) {
