@@ -86,3 +86,45 @@ const transformShopifyProduct = (shopifyProduct: ShopifyProduct): Product => {
     variants,
   };
 };
+
+export async function fetchShopifyProductsByIds(productIds: string[]) {
+  const query = `
+    query GetWishlistProducts($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on Product {
+          id
+          title
+          description
+          featuredImage {
+            url
+          }
+          variants(first: 1) {
+            edges {
+              node {
+                price {
+                  amount
+                  currencyCode
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    ids: productIds.map(id => 
+      id.startsWith("gid://shopify/Product/") ? id : `gid://shopify/Product/${id}`
+    )
+  };
+
+  try {
+    const response = await fetchShopifyGraphQL(query, variables);
+    return response.data.nodes.filter((node: any) => node !== null);
+  } catch (error) {
+    console.error("Error fetching wishlist products:", error);
+    return [];
+  }
+}
+
