@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/CartContext';
@@ -132,7 +131,7 @@ export const CartDrawer = () => {
       const lineItems = cart.items
         .filter(item => item.variantId && item.quantity > 0) // Only valid items
         .map(item => ({
-          variantId: item.variantId,
+          merchandiseId: item.variantId, // Changed from variantId to merchandiseId
           quantity: item.quantity,
         }));
 
@@ -142,39 +141,17 @@ export const CartDrawer = () => {
 
       console.log('Sending checkout request with line items:', lineItems);
 
-      // Fixed mutation - removed the 'available' field that doesn't exist
-      const checkoutMutation = `
-        mutation checkoutCreate($input: CheckoutCreateInput!) {
-          checkoutCreate(input: $input) {
-            checkout {
+      // START OF CRITICAL CHANGES (LINES 192-238)
+      const cartMutation = `
+        mutation cartCreate($cartInput: CartInput!) {
+          cartCreate(input: $cartInput) {
+            cart {
               id
-              webUrl
-              totalPrice {
-                amount
-                currencyCode
-              }
-              lineItems(first: 50) {
-                edges {
-                  node {
-                    id
-                    title
-                    quantity
-                    variant {
-                      id
-                      title
-                      price {
-                        amount
-                        currencyCode
-                      }
-                    }
-                  }
-                }
-              }
+              checkoutUrl
             }
-            checkoutUserErrors {
+            userErrors {
               field
               message
-              code
             }
           }
         }
@@ -182,14 +159,15 @@ export const CartDrawer = () => {
 
       const { data, error } = await supabase.functions.invoke('shopify-products', {
         body: {
-          query: checkoutMutation,
+          query: cartMutation,
           variables: {
-            input: {
-              lineItems: lineItems,
+            cartInput: {
+              lines: lineItems,
             },
           },
         },
       });
+      // END OF CRITICAL CHANGES
 
       console.log('Shopify API Response:', data);
       console.log('Supabase Function Error:', error);
@@ -223,31 +201,31 @@ export const CartDrawer = () => {
         throw new Error('Invalid response structure from Shopify API');
       }
 
-      const checkoutData = data.data.checkoutCreate;
+      const cartData = data.data.cartCreate;
       
-      // Check for Shopify-specific checkout errors
-      if (checkoutData.checkoutUserErrors && checkoutData.checkoutUserErrors.length > 0) {
-        const errorMessages = checkoutData.checkoutUserErrors
+      // Check for Shopify-specific cart errors
+      if (cartData.userErrors && cartData.userErrors.length > 0) {
+        const errorMessages = cartData.userErrors
           .map((err: any) => `${err.field ? err.field + ': ' : ''}${err.message}`)
           .join(', ');
         
-        console.error('Shopify checkout errors:', checkoutData.checkoutUserErrors);
-        setCheckoutError(`Checkout Errors: ${errorMessages}`);
+        console.error('Shopify cart errors:', cartData.userErrors);
+        setCheckoutError(`Cart Errors: ${errorMessages}`);
         throw new Error(errorMessages);
       }
 
-      // Validate checkout creation
-      if (!checkoutData.checkout || !checkoutData.checkout.webUrl) {
-        console.error('No checkout URL received:', checkoutData);
+      // Validate cart creation
+      if (!cartData.cart || !cartData.cart.checkoutUrl) {
+        console.error('No checkout URL received:', cartData);
         setCheckoutError('No checkout URL received from Shopify');
         throw new Error('No checkout URL received from Shopify');
       }
 
-      console.log('Checkout created successfully:', checkoutData.checkout);
+      console.log('Cart created successfully:', cartData.cart);
       
       // Show success message
       toast({
-        title: 'Checkout Created',
+        title: 'Checkout Ready',
         description: 'Redirecting to Shopify checkout...',
       });
 
@@ -255,7 +233,7 @@ export const CartDrawer = () => {
       clearCart();
       
       // Redirect to Shopify checkout
-      window.location.href = checkoutData.checkout.webUrl;
+      window.location.href = cartData.cart.checkoutUrl;
       
     } catch (error: any) {
       console.error('Checkout error:', error);
