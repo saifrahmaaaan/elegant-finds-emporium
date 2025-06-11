@@ -1,5 +1,5 @@
-
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Search, ShoppingBag, User, LogOut } from 'lucide-react';
 import { AuthDialog } from './auth/AuthDialog';
@@ -78,6 +78,12 @@ export const Header = () => {
               <Button variant="ghost" className="font-garamond hover:text-accent">
                 Designers
               </Button>
+              <Link 
+                to="/wishlist" 
+                className="font-garamond hover:text-accent transition-colors"
+              >
+                Wishlist
+              </Link>
             </nav>
 
             {/* Right side icons */}
