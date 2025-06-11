@@ -17,11 +17,22 @@ serve(async (req) => {
     const SHOPIFY_DOMAIN = Deno.env.get('SHOPIFY_DOMAIN')
     const SHOPIFY_STOREFRONT_TOKEN = Deno.env.get('SHOPIFY_STOREFRONT_TOKEN')
 
+    console.log('Environment check:', {
+      hasDomain: !!SHOPIFY_DOMAIN,
+      hasToken: !!SHOPIFY_STOREFRONT_TOKEN,
+      domain: SHOPIFY_DOMAIN
+    })
+
     if (!SHOPIFY_DOMAIN || !SHOPIFY_STOREFRONT_TOKEN) {
-      throw new Error('Missing Shopify configuration')
+      throw new Error('Missing Shopify configuration. Please ensure SHOPIFY_DOMAIN and SHOPIFY_STOREFRONT_TOKEN are set in environment variables.')
     }
 
-    const shopifyUrl = `https://${SHOPIFY_DOMAIN}/api/2023-10/graphql.json`
+    // Use the correct Storefront API endpoint (2024-04 version)
+    const shopifyUrl = `https://${SHOPIFY_DOMAIN}/api/2024-04/graphql.json`
+
+    console.log('Making request to:', shopifyUrl)
+    console.log('Query:', query)
+    console.log('Variables:', variables)
 
     const response = await fetch(shopifyUrl, {
       method: 'POST',
@@ -35,11 +46,17 @@ serve(async (req) => {
       }),
     })
 
+    console.log('Shopify response status:', response.status)
+    console.log('Shopify response headers:', Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
-      throw new Error(`Shopify API error: ${response.status} ${response.statusText}`)
+      const errorText = await response.text()
+      console.error('Shopify API error response:', errorText)
+      throw new Error(`Shopify API error: ${response.status} ${response.statusText} - ${errorText}`)
     }
 
     const data = await response.json()
+    console.log('Shopify response data:', JSON.stringify(data, null, 2))
 
     return new Response(
       JSON.stringify(data),
@@ -49,9 +66,12 @@ serve(async (req) => {
       },
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Edge function error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        timestamp: new Date().toISOString()
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

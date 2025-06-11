@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/CartContext';
-import { Minus, Plus, Trash2, Bug } from 'lucide-react';
+import { Minus, Plus, Trash2, Bug, TestTube } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -11,8 +11,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export const CartDrawer = () => {
   const { cart, removeFromCart, updateQuantity, toggleCart, clearCart } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [apiTestResult, setApiTestResult] = useState<any>(null);
   const { toast } = useToast();
 
   const formatPrice = (price: number, currencyCode: string = 'USD') => {
@@ -39,6 +41,77 @@ export const CartDrawer = () => {
     
     console.log('Debug Info - Cart Line Items:', lineItems);
     console.log('Debug Info - Full Cart State:', cart);
+  };
+
+  const testApiConnection = async () => {
+    setIsTesting(true);
+    setApiTestResult(null);
+    
+    try {
+      console.log('Testing Shopify API connection...');
+      
+      const testQuery = `
+        query testConnection {
+          shop {
+            name
+            primaryDomain {
+              url
+            }
+          }
+        }
+      `;
+
+      const { data, error } = await supabase.functions.invoke('shopify-products', {
+        body: {
+          query: testQuery,
+          variables: {}
+        }
+      });
+
+      console.log('API Test Response:', data);
+      console.log('API Test Error:', error);
+
+      setApiTestResult({
+        success: !error && data && !data.errors,
+        data: data,
+        error: error,
+        timestamp: new Date().toISOString()
+      });
+
+      if (error) {
+        toast({
+          title: 'API Test Failed',
+          description: `Connection error: ${error.message}`,
+          variant: 'destructive',
+        });
+      } else if (data && data.errors) {
+        toast({
+          title: 'GraphQL Errors',
+          description: `GraphQL errors found: ${data.errors.map((e: any) => e.message).join(', ')}`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'API Test Successful',
+          description: 'Shopify API connection is working correctly.',
+        });
+      }
+    } catch (error: any) {
+      console.error('API test error:', error);
+      setApiTestResult({
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+      
+      toast({
+        title: 'API Test Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const handleCheckout = async () => {
@@ -69,6 +142,7 @@ export const CartDrawer = () => {
 
       console.log('Sending checkout request with line items:', lineItems);
 
+      // Fixed mutation - removed the 'available' field that doesn't exist
       const checkoutMutation = `
         mutation checkoutCreate($input: CheckoutCreateInput!) {
           checkoutCreate(input: $input) {
@@ -88,7 +162,10 @@ export const CartDrawer = () => {
                     variant {
                       id
                       title
-                      available
+                      price {
+                        amount
+                        currencyCode
+                      }
                     }
                   }
                 }
@@ -115,32 +192,54 @@ export const CartDrawer = () => {
       });
 
       console.log('Shopify API Response:', data);
+      console.log('Supabase Function Error:', error);
 
+      // Handle Supabase function errors
       if (error) {
         console.error('Supabase function error:', error);
+        setCheckoutError(`Function Error: ${error.message}`);
         throw new Error(`Failed to create checkout: ${error.message}`);
       }
 
-      if (!data || !data.data) {
-        console.error('Invalid response structure:', data);
-        throw new Error('Invalid response from Shopify API');
+      // Handle missing or invalid response structure
+      if (!data) {
+        console.error('No response data received');
+        setCheckoutError('No response data received from API');
+        throw new Error('No response data received from Shopify API');
+      }
+
+      // Handle GraphQL errors
+      if (data.errors) {
+        console.error('GraphQL errors:', data.errors);
+        const errorMessages = data.errors.map((err: any) => err.message).join(', ');
+        setCheckoutError(`GraphQL Errors: ${errorMessages}`);
+        throw new Error(`GraphQL errors: ${errorMessages}`);
+      }
+
+      // Handle missing data structure
+      if (!data.data) {
+        console.error('Invalid response structure - missing data field:', data);
+        setCheckoutError('Invalid response structure from Shopify API');
+        throw new Error('Invalid response structure from Shopify API');
       }
 
       const checkoutData = data.data.checkoutCreate;
       
-      // Check for Shopify-specific errors
+      // Check for Shopify-specific checkout errors
       if (checkoutData.checkoutUserErrors && checkoutData.checkoutUserErrors.length > 0) {
         const errorMessages = checkoutData.checkoutUserErrors
           .map((err: any) => `${err.field ? err.field + ': ' : ''}${err.message}`)
           .join(', ');
         
         console.error('Shopify checkout errors:', checkoutData.checkoutUserErrors);
-        setCheckoutError(`Checkout failed: ${errorMessages}`);
+        setCheckoutError(`Checkout Errors: ${errorMessages}`);
         throw new Error(errorMessages);
       }
 
+      // Validate checkout creation
       if (!checkoutData.checkout || !checkoutData.checkout.webUrl) {
         console.error('No checkout URL received:', checkoutData);
+        setCheckoutError('No checkout URL received from Shopify');
         throw new Error('No checkout URL received from Shopify');
       }
 
@@ -162,7 +261,9 @@ export const CartDrawer = () => {
       console.error('Checkout error:', error);
       const errorMessage = error.message || 'An unexpected error occurred during checkout';
       
-      setCheckoutError(errorMessage);
+      if (!checkoutError) {
+        setCheckoutError(errorMessage);
+      }
       
       toast({
         title: 'Checkout Error',
@@ -270,7 +371,8 @@ export const CartDrawer = () => {
 
               {checkoutError && (
                 <Alert variant="destructive" className="mb-4">
-                  <AlertDescription className="text-sm">
+                  <AlertDescription className="text-sm whitespace-pre-wrap">
+                    <strong>Checkout Error:</strong><br />
                     {checkoutError}
                   </AlertDescription>
                 </Alert>
@@ -278,10 +380,27 @@ export const CartDrawer = () => {
 
               {debugInfo && (
                 <Alert className="mb-4">
-                  <AlertDescription className="text-xs font-mono">
+                  <AlertDescription className="text-xs font-mono whitespace-pre-wrap">
                     <strong>Debug Info:</strong><br />
                     Line Items: {JSON.stringify(debugInfo.lineItems, null, 2)}<br />
-                    Total: {debugInfo.totalItems} items, ${debugInfo.cartTotal}
+                    Total: {debugInfo.totalItems} items, ${debugInfo.cartTotal}<br />
+                    Time: {debugInfo.timestamp}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {apiTestResult && (
+                <Alert className="mb-4">
+                  <AlertDescription className="text-xs font-mono whitespace-pre-wrap">
+                    <strong>API Test Result:</strong><br />
+                    Success: {apiTestResult.success ? 'Yes' : 'No'}<br />
+                    {apiTestResult.data && (
+                      <>Data: {JSON.stringify(apiTestResult.data, null, 2)}<br /></>
+                    )}
+                    {apiTestResult.error && (
+                      <>Error: {JSON.stringify(apiTestResult.error, null, 2)}<br /></>
+                    )}
+                    Time: {apiTestResult.timestamp}
                   </AlertDescription>
                 </Alert>
               )}
@@ -294,15 +413,28 @@ export const CartDrawer = () => {
                   </span>
                 </div>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={showDebugInfo}
-                  className="w-full mb-2"
-                >
-                  <Bug className="h-4 w-4 mr-2" />
-                  Show Debug Info
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={testApiConnection}
+                    disabled={isTesting}
+                    className="w-full"
+                  >
+                    <TestTube className="h-4 w-4 mr-2" />
+                    {isTesting ? 'Testing...' : 'Test API'}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={showDebugInfo}
+                    className="w-full"
+                  >
+                    <Bug className="h-4 w-4 mr-2" />
+                    Debug Info
+                  </Button>
+                </div>
                 
                 <Button
                   className="w-full luxury-gold-gradient text-black hover:opacity-90 transition-opacity font-garamond py-3"
