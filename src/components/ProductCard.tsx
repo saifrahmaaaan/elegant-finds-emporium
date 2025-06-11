@@ -1,11 +1,40 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Product } from '@/types/shopify';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import WishlistButton from './WishlistButton';
 
+// Updated interface to handle both product structures
+interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  image: string;
+  price: number;
+  currencyCode?: string;
+  variants: {
+    id: string;
+    title: string;
+    price: number;
+    currencyCode: string;
+  }[];
+  // Fields from Shopify nodes query
+  featuredImage?: {
+    url: string;
+  };
+  variants?: {
+    edges: Array<{
+      node: {
+        id: string;
+        title: string;
+        price: {
+          amount: string;
+          currencyCode: string;
+        };
+      };
+    }>;
+  };
+}
 
 interface ProductCardProps {
   product: Product;
@@ -16,32 +45,50 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
   const { addToCart } = useCart();
   const { toast } = useToast();
 
-  const formatPrice = (price: number) => {
-    const currencyCode = product.variants.length > 0 
-      ? product.variants[0].currencyCode 
-      : 'USD';
-      
+  // Clean product ID (remove "gid://shopify/Product/" prefix if present)
+  const cleanProductId = product.id.replace('gid://shopify/Product/', '');
+  
+  // Handle both product structures
+  const mainImage = product.image || product.featuredImage?.url || '';
+  const price = product.price || 
+               Number(product.variants?.edges?.[0]?.node?.price?.amount) || 0;
+  const currencyCode = product.currencyCode || 
+                      product.variants?.edges?.[0]?.node?.price?.currencyCode || 'USD';
+  const variantCount = product.variants?.length || 
+                      product.variants?.edges?.length || 0;
+
+  const formatPrice = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currencyCode,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(price);
+    }).format(amount);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    const variant = product.variants[0]; // Use first variant for quick add
+    // Use first available variant
+    const variant = product.variants?.[0] || product.variants?.edges?.[0]?.node;
     
+    if (!variant) {
+      toast({
+        title: 'Error',
+        description: 'No variants available for this product',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     addToCart({
-      productId: product.id,
-      variantId: variant.id,
+      productId: cleanProductId,
+      variantId: variant.id.replace('gid://shopify/ProductVariant/', ''),
       productTitle: product.name,
       variantTitle: variant.title,
-      price: variant.price,
-      currencyCode: variant.currencyCode,
-      image: product.image,
+      price: variant.price || Number(variant.price?.amount),
+      currencyCode: variant.currencyCode || variant.price?.currencyCode,
+      image: mainImage,
     });
 
     toast({
@@ -56,14 +103,13 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
       onClick={onClick}
     >
       <div className="relative">
-        {/* Wishlist Button in top-right corner */}
         <div className="absolute top-2 right-2 z-10">
-          <WishlistButton productId={product.id} />
+          <WishlistButton productId={cleanProductId} />
         </div>
 
         <div className="relative overflow-hidden">
           <img
-            src={product.image}
+            src={mainImage}
             alt={product.name}
             className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
           />
@@ -72,7 +118,6 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
         
         <CardContent className="p-6">
           <div className="mb-3">
-            <p className="text-sm text-accent font-garamond font-medium">{product.brand}</p>
             <h3 className="font-playfair font-semibold text-lg text-foreground line-clamp-2">
               {product.name}
             </h3>
@@ -83,11 +128,11 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
           
           <div className="flex items-center justify-between mb-4">
             <span className="text-xl font-playfair font-bold text-foreground">
-              {formatPrice(product.price)}
+              {formatPrice(price)}
             </span>
-            {product.variants.length > 1 && (
+            {variantCount > 1 && (
               <span className="text-xs text-muted-foreground font-garamond">
-                {product.variants.length} options
+                {variantCount} options
               </span>
             )}
           </div>
