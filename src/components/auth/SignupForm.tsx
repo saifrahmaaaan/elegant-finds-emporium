@@ -33,11 +33,11 @@ export const SignupForm = ({ onModeChange, onClose }: SignupFormProps) => {
         password,
         options: {
           emailRedirectTo: redirectUrl,
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            role: role,
-          }
+          // data: {
+          //   first_name: firstName,
+          //   last_name: lastName,
+          //   role: role,
+          // }
         }
       });
 
