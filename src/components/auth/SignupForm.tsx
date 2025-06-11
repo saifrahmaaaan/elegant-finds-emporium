@@ -34,14 +34,13 @@ export const SignupForm = ({ onModeChange, onClose }: SignupFormProps) => {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            first_name: firstName,
-            last_name: lastName,
             role: role,
           }
         }
       });
 
       if (error) {
+        console.error('Signup error:', error);
         toast({
           title: 'Signup Failed',
           description: error.message,
@@ -55,6 +54,7 @@ export const SignupForm = ({ onModeChange, onClose }: SignupFormProps) => {
         onClose();
       }
     } catch (error) {
+      console.error('Unexpected signup error:', error);
       toast({
         title: 'Error',
         description: 'An unexpected error occurred. Please try again.',
