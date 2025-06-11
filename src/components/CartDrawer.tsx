@@ -392,7 +392,7 @@ export const CartDrawer = () => {
                 </div>
                 
                 <div className="grid grid-cols-2 gap-2">
-                  <Button
+{/*                   <Button
                     variant="outline"
                     size="sm"
                     onClick={testApiConnection}
@@ -401,9 +401,9 @@ export const CartDrawer = () => {
                   >
                     <TestTube className="h-4 w-4 mr-2" />
                     {isTesting ? 'Testing...' : 'Test API'}
-                  </Button>
+                  </Button> */}
                   
-                  <Button
+{/*                   <Button
                     variant="outline"
                     size="sm"
                     onClick={showDebugInfo}
@@ -411,7 +411,7 @@ export const CartDrawer = () => {
                   >
                     <Bug className="h-4 w-4 mr-2" />
                     Debug Info
-                  </Button>
+                  </Button> */}
                 </div>
                 
                 <Button
