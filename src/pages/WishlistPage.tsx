@@ -5,7 +5,7 @@ import { fetchShopifyProductsByIds } from "@/services/shopify";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const WishlistPage = () => {
+const WishlistPage = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -14,7 +14,7 @@ export const WishlistPage = () => {
     const fetchWishlistProducts = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           toast({
             title: "Authentication required",
@@ -38,13 +38,13 @@ export const WishlistPage = () => {
         }
 
         // 2. Convert to Shopify IDs
-        const shopifyIds = data.map(item => 
+        const shopifyIds = data.map(item =>
           `gid://shopify/Product/${item.product_id}`
         );
 
         // 3. Fetch product details from Shopify
         const shopifyProducts = await fetchShopifyProductsByIds(shopifyIds);
-        
+
         // 4. Transform to match ProductCard's expected format
         const transformedProducts = shopifyProducts
           .filter(Boolean)
@@ -81,7 +81,7 @@ export const WishlistPage = () => {
   return (
     <div className="container py-8">
       <h1 className="text-3xl font-playfair mb-6">Your Wishlist</h1>
-      
+
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
@@ -96,7 +96,9 @@ export const WishlistPage = () => {
             <ProductCard
               key={product.id}
               product={product}
-              onClick={() => {/* Add modal trigger if needed */}}
+              onClick={() => {
+                /* Add modal trigger if needed */
+              }}
             />
           ))}
         </div>
@@ -104,3 +106,5 @@ export const WishlistPage = () => {
     </div>
   );
 };
+
+export default WishlistPage;
