@@ -37,10 +37,8 @@ const WishlistPage = () => {
           return;
         }
 
-        // 2. Convert to Shopify IDs
-        const shopifyIds = data.map(item =>
-          `gid://shopify/Product/${item.product_id}`
-        );
+        // 2. Extract Shopify IDs directly
+        const shopifyIds = data.map(item => item.product_id);
 
         // 3. Fetch product details from Shopify
         const shopifyProducts = await fetchShopifyProductsByIds(shopifyIds);
@@ -49,14 +47,14 @@ const WishlistPage = () => {
         const transformedProducts = shopifyProducts
           .filter(Boolean)
           .map((product: any) => ({
-            id: product.id,
+            id: product.id.replace('gid://shopify/Product/', ''),
             name: product.title,
             description: product.description,
             image: product.featuredImage?.url || "",
             price: Number(product.variants?.edges[0]?.node?.price?.amount) || 0,
             currencyCode: product.variants?.edges[0]?.node?.price?.currencyCode,
             variants: product.variants?.edges.map((edge: any) => ({
-              id: edge.node.id,
+              id: edge.node.id.replace('gid://shopify/ProductVariant/', ''),
               title: edge.node.title,
               price: Number(edge.node.price?.amount),
               currencyCode: edge.node.price?.currencyCode
@@ -96,9 +94,7 @@ const WishlistPage = () => {
             <ProductCard
               key={product.id}
               product={product}
-              onClick={() => {
-                /* Add modal trigger if needed */
-              }}
+              onClick={() => {/* Add modal trigger if needed */}}
             />
           ))}
         </div>
