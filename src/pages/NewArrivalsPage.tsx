@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { fetchShopifyProducts } from '@/services/shopify';
 import { ProductCard } from '@/components/ProductCard';
+import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const NewArrivalsPage = () => {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
   useEffect(() => {
     const loadNewArrivals = async () => {
@@ -23,6 +25,17 @@ const NewArrivalsPage = () => {
     loadNewArrivals();
   }, []);
 
+  const handleProductClick = (product: any) => {
+    console.log('Product clicked:', {
+      id: product.id,
+      name: product.name,
+      hasImages: Boolean(product.images?.length),
+      hasVariants: Boolean(product.variants?.length),
+      image: product.image
+    });
+    setSelectedProduct(product);
+  };
+
   return (
     <div className="container py-8">
       <h1 className="text-3xl font-playfair mb-8">New Arrivals</h1>
@@ -37,10 +50,20 @@ const NewArrivalsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              onClick={() => handleProductClick(product)}
+            />
           ))}
         </div>
       )}
+
+      <ProductDetailModal
+        product={selectedProduct}
+        open={!!selectedProduct}
+        onOpenChange={(open) => !open && setSelectedProduct(null)}
+      />
     </div>
   );
 };

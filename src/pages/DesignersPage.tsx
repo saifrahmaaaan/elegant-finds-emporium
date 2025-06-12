@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { fetchShopifyProducts } from '@/services/shopify';
 import { ProductCard } from '@/components/ProductCard';
+import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Helper to group products by vendor/designer
-const groupByDesigner = (products) => {
+const groupByDesigner = (products: any[]): Record<string, any[]> => {
   const groups = {};
   products.forEach(product => {
     const designer = product.brand || 'Unknown Designer';
@@ -15,8 +16,9 @@ const groupByDesigner = (products) => {
 };
 
 const DesignersPage = () => {
-  const [designerGroups, setDesignerGroups] = useState({});
+  const [designerGroups, setDesignerGroups] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
   useEffect(() => {
     const loadDesigners = async () => {
@@ -31,6 +33,17 @@ const DesignersPage = () => {
     };
     loadDesigners();
   }, []);
+
+  const handleProductClick = (product: any) => {
+    console.log('Product clicked:', {
+      id: product.id,
+      name: product.name,
+      hasImages: Boolean(product.images?.length),
+      hasVariants: Boolean(product.variants?.length),
+      image: product.image
+    });
+    setSelectedProduct(product);
+  };
 
   return (
     <div className="container py-8">
@@ -49,12 +62,22 @@ const DesignersPage = () => {
             <h2 className="text-2xl font-garamond mb-4">{designer}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  onClick={() => handleProductClick(product)}
+                />
               ))}
             </div>
           </div>
         ))
       )}
+
+      <ProductDetailModal
+        product={selectedProduct}
+        open={!!selectedProduct}
+        onOpenChange={(open) => !open && setSelectedProduct(null)}
+      />
     </div>
   );
 };

@@ -157,13 +157,23 @@ export async function fetchCollectionProducts(collectionHandle: string) {
               id
               title
               handle
+              description
+              vendor
               featuredImage {
                 url
               }
-              variants(first: 1) {
+              images(first: 3) {
+                edges {
+                  node {
+                    url
+                  }
+                }
+              }
+              variants(first: 5) {
                 edges {
                   node {
                     id
+                    title
                     price {
                       amount
                       currencyCode
@@ -179,17 +189,72 @@ export async function fetchCollectionProducts(collectionHandle: string) {
   `;
 
   try {
+    console.log('📡 [fetchCollectionProducts] Sending GraphQL query...');
     const response = await fetchShopifyGraphQL(query, { handle: collectionHandle });
     
-    // Simplified error handling
-    if (!response?.collectionByHandle?.products?.edges) {
-      console.error('Invalid response structure:', response);
+    console.log('📦 [fetchCollectionProducts] Raw API response:', JSON.stringify(response, null, 2));
+    
+    if (!response) {
+      console.error('❌ [fetchCollectionProducts] No response from API');
+      return [];
+    }
+    
+    if (!response.collectionByHandle) {
+      console.error('❌ [fetchCollectionProducts] No collection found for handle:', collectionHandle);
+      console.log('Available collections (if any):', Object.keys(response));
+      return [];
+    }
+    
+    if (!response.collectionByHandle.products?.edges) {
+      console.error('❌ [fetchCollectionProducts] Invalid products data structure:', response.collectionByHandle);
       return [];
     }
 
-    return response.collectionByHandle.products.edges.map((edge: any) => edge.node);
+    console.log(`📊 [fetchCollectionProducts] Found ${response.collectionByHandle.products.edges.length} products`);
+    
+    const products = response.collectionByHandle.products.edges.map(({ node }: { node: any }, index: number) => {
+      try {
+        console.log(`🔄 [fetchCollectionProducts] Processing product ${index + 1}:`, node.title);
+        
+        const images = node.images?.edges?.map((edge: any) => edge.node.url) || [];
+        const variants = node.variants?.edges?.map(({ node: variant }: { node: any }) => ({
+          id: variant.id,
+          title: variant.title || 'Default',
+          price: parseFloat(variant.price?.amount || '0'),
+          currencyCode: variant.price?.currencyCode || 'USD'
+        })) || [];
+
+        const product = {
+          id: node.id?.replace('gid://shopify/Product/', '') || `unknown-${index}`,
+          name: node.title || 'Unnamed Product',
+          description: node.description || 'No description available',
+          brand: node.vendor || 'Designer',
+          image: node.featuredImage?.url || images[0] || '/placeholder-product.jpg',
+          images: images,
+          price: variants[0]?.price || 0,
+          variants: variants
+        };
+        
+        if (variants.length === 0) {
+          console.warn(`⚠️ [fetchCollectionProducts] No variants found for product:`, node.title);
+        }
+        
+        console.log(`✅ [fetchCollectionProducts] Processed product:`, product.name);
+        return product;
+      } catch (error) {
+        console.error(`❌ [fetchCollectionProducts] Error processing product ${index}:`, error);
+        return null;
+      }
+    }).filter(Boolean); // Remove any null entries from failed processing
+    
+    console.log(`🎉 [fetchCollectionProducts] Successfully processed ${products.length} products`);
+    return products;
   } catch (error) {
-    console.error('Error fetching collection products:', error);
+    console.error('❌ [fetchCollectionProducts] Error fetching collection products:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    // Return empty array on error to prevent crashes
     return [];
   }
 }

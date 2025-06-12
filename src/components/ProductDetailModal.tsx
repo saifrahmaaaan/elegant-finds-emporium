@@ -43,21 +43,32 @@ export const ProductDetailModal = ({ product, open, onOpenChange }: ProductDetai
   };
 
   const handleAddToCart = () => {
-    const variant = product.variants[selectedVariant];
+    if (!product || !product.variants?.[selectedVariant]) {
+      console.error('Cannot add to cart: Missing product or variant data');
+      return;
+    }
     
+    const variant = product.variants[selectedVariant];
+    const productName = product.name || 'Product';
+    const variantName = variant?.title || 'Standard';
+    const productImage = product.images?.[0] || product.image || '/placeholder-product.jpg';
+    const price = typeof variant?.price === 'number' ? variant.price : parseFloat(variant?.price?.amount || '0');
+
+    // Use the correct cart item structure expected by the CartContext
     addToCart({
       productId: product.id,
       variantId: variant.id,
-      productTitle: product.name,
-      variantTitle: variant.title,
-      price: variant.price,
-      currencyCode: variant.currencyCode,
-      image: product.image,
+      productTitle: productName,
+      variantTitle: variantName,
+      price: price,
+      currencyCode: variant.currencyCode || 'USD',
+      image: productImage,
+      quantity: 1
     });
 
     toast({
       title: 'Added to cart',
-      description: `${product.name} (${variant.title}) has been added to your cart.`,
+      description: `${productName} (${variantName}) has been added to your cart.`,
     });
 
     onOpenChange(false);
@@ -77,13 +88,13 @@ export const ProductDetailModal = ({ product, open, onOpenChange }: ProductDetai
               {product.images.length > 0 ? (
                 <img
                   src={product.images[selectedImageIndex]}
-                  alt={product.name}
+                  alt={product?.name || 'Product image'}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <img
-                  src={product.image}
-                  alt={product.name}
+                  src={product.image || '/placeholder-product.jpg'}
+                  alt={product.name || 'Product image'}
                   className="w-full h-full object-cover"
                 />
               )}
@@ -147,11 +158,11 @@ export const ProductDetailModal = ({ product, open, onOpenChange }: ProductDetai
             </div>
 
             {/* Variants */}
-            {product.variants.length > 1 && (
+            {(product.variants || []).length > 1 && (
               <div className="space-y-3">
                 <h3 className="font-playfair font-semibold text-lg">Options</h3>
                 <div className="space-y-2">
-                  {product.variants.map((variant, index) => (
+                  {(product.variants || []).map((variant, index) => (
                     <button
                       key={variant.id}
                       onClick={() => setSelectedVariant(index)}
