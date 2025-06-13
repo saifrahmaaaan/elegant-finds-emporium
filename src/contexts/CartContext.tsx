@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import { CartItem, CartState } from '@/types/cart';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CartContextType {
   cart: CartState;
@@ -111,28 +113,98 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     itemCount: 0,
     total: 0,
   });
+  const [cartLoaded, setCartLoaded] = React.useState(false);
+  const { user } = useAuth();
 
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem('elegantHandbagCart');
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart);
-        // Filter out any invalid items during load
-        const validItems = parsedCart.filter((item: CartItem) => 
-          isValidVariantId(item.variantId)
-        );
-        dispatch({ type: 'LOAD_CART', payload: validItems });
-      } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
-      }
+  // Helper: Save cart to Supabase for logged-in user
+  const saveCartToSupabase = useCallback(async (cartItems: CartItem[]) => {
+    if (!user) return;
+    try {
+      await supabase.from('user_carts').upsert({
+        user_id: user.id,
+        cart: cartItems,
+        updated_at: new Date().toISOString(),
+      });
+      console.log('[Cart] Saved to Supabase:', cartItems);
+    } catch (e) {
+      console.error('Failed to save cart to Supabase:', e);
     }
-  }, []);
+  }, [user]);
 
-  // Save cart to localStorage whenever cart changes
+  // Helper: Load cart from Supabase for logged-in user
+  const loadCartFromSupabase = useCallback(async () => {
+    if (!user) return null;
+    const { data, error } = await supabase
+      .from('user_carts')
+      .select('cart')
+      .eq('user_id', user.id)
+      .single();
+    if (error) {
+      if (error.code !== 'PGRST116') // not found
+        console.error('Error loading cart from Supabase:', error);
+      return null;
+    }
+    return data?.cart || null;
+  }, [user]);
+
+  // Only load cart once per user session/auth change
+  const prevUserRef = useRef<any>(null);
+
   useEffect(() => {
-    localStorage.setItem('elegantHandbagCart', JSON.stringify(cart.items));
-  }, [cart.items]);
+    const prevUser = prevUserRef.current;
+    const isLoggingIn = !prevUser && user;
+    const isSwitchingUser = user && prevUser && user.id !== prevUser.id;
+    const isLoggingOut = prevUser && !user;
+    // Always load Supabase cart on login, user switch, and page refresh (when user is present)
+    (async () => {
+      if (user) {
+        const supabaseCart = await loadCartFromSupabase();
+        let newCart: CartItem[] = [];
+        // Merge guest cart ONLY if logging in and guest cart is non-empty
+        if (isLoggingIn && cart.items.length > 0) {
+          const guestItems = cart.items;
+          const supabaseItems = Array.isArray(supabaseCart) ? supabaseCart : [];
+          const itemMap = new Map<string, CartItem>();
+          [...supabaseItems, ...guestItems].forEach(item => {
+            if (!isValidVariantId(item.variantId)) return;
+            if (itemMap.has(item.variantId)) {
+              const existing = itemMap.get(item.variantId)!;
+              itemMap.set(item.variantId, {
+                ...existing,
+                quantity: existing.quantity + item.quantity,
+              });
+            } else {
+              itemMap.set(item.variantId, { ...item });
+            }
+          });
+          newCart = Array.from(itemMap.values());
+          await saveCartToSupabase(newCart);
+          console.log('[Cart] Merged guest cart into Supabase on login', newCart);
+        } else {
+          newCart = Array.isArray(supabaseCart) ? supabaseCart : [];
+          console.log('[Cart] Loaded cart from Supabase', newCart);
+        }
+        dispatch({ type: 'LOAD_CART', payload: newCart });
+        setCartLoaded(true);
+      } else if (isLoggingOut) {
+        // Only clear cart on explicit user action, not on every logout
+        dispatch({ type: 'LOAD_CART', payload: [] });
+        setCartLoaded(true);
+        console.log('[Cart] Guest session: empty cart');
+      }
+      prevUserRef.current = user;
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Save cart to Supabase (if logged in) whenever cart changes, but only after cartLoaded
+  useEffect(() => {
+    if (!cartLoaded) return;
+    if (user) {
+      saveCartToSupabase(cart.items);
+      console.log('[Cart] Saved to Supabase (user only)', cart.items);
+    }
+  }, [cart.items, user, saveCartToSupabase, cartLoaded]);
 
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     if (!isValidVariantId(item.variantId)) {

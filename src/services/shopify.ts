@@ -81,6 +81,15 @@ export const fetchShopifyProducts = async (first: number = 12): Promise<Product[
   }
 };
 
+// Fetch a batch of products by Shopify product IDs (for wishlist)
+export const fetchShopifyProductsByIds = async (ids: string[]): Promise<Product[]> => {
+  if (!ids || ids.length === 0) return [];
+  // For now, fetch all products and filter (Shopify Storefront API does not support direct batch lookup by IDs)
+  // In production, use a better approach or cache
+  const allProducts = await fetchShopifyProducts(100);
+  return allProducts.filter(p => ids.includes(p.id));
+};
+
 const transformShopifyProduct = (shopifyProduct: ShopifyProduct): Product => {
   const variants = shopifyProduct.variants.edges.map(({ node }) => ({
     id: node.id,

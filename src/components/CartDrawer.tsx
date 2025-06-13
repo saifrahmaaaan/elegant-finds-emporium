@@ -3,11 +3,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useCart } from '@/contexts/CartContext';
 import { Minus, Plus, Trash2, Bug, TestTube } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { AuthDialog } from '@/components/auth/AuthDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const CartDrawer = () => {
+  const { user } = useAuth();
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const { cart, removeFromCart, updateQuantity, toggleCart, clearCart } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -114,6 +118,10 @@ export const CartDrawer = () => {
   };
 
   const handleCheckout = async () => {
+    if (!user) {
+      setAuthDialogOpen(true);
+      return;
+    }
     if (cart.items.length === 0) {
       toast({
         title: 'Cart Empty',
@@ -254,187 +262,160 @@ export const CartDrawer = () => {
   };
 
   return (
-    <Sheet open={cart.isOpen} onOpenChange={toggleCart}>
-      <SheetContent className="w-full sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle className="font-playfair text-2xl">
-            Shopping Cart
-            {cart.itemCount > 0 && (
-              <span className="ml-2 text-sm font-garamond text-muted-foreground">
-                ({cart.itemCount} items)
-              </span>
-            )}
-          </SheetTitle>
-        </SheetHeader>
+    <>
+      <Sheet open={cart.isOpen} onOpenChange={toggleCart}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="font-garamond text-2xl">
+              Shopping Cart
+              {cart.itemCount > 0 && (
+                <span className="ml-2 text-sm font-garamond text-muted-foreground">
+                  ({cart.itemCount} items)
+                </span>
+              )}
+            </SheetTitle>
+          </SheetHeader>
 
-        <div className="flex flex-col h-full">
-          {cart.items.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-muted-foreground font-garamond text-lg mb-4">
-                  Your cart is empty
-                </p>
-                <Button onClick={toggleCart} variant="outline">
-                  Continue Shopping
-                </Button>
+          <div className="flex flex-col h-full">
+            {cart.items.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-muted-foreground font-garamond text-lg mb-4">
+                    Your cart is empty
+                  </p>
+                  <Button onClick={toggleCart} variant="outline">
+                    Continue Shopping
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex-1 overflow-y-auto py-6">
-                <div className="space-y-6">
-                  {cart.items.map((item) => (
-                    <div key={item.variantId} className="flex gap-4">
-                      <img
-                        src={item.image}
-                        alt={item.productTitle}
-                        className="w-20 h-20 object-cover rounded-lg"
-                      />
-                      
-                      <div className="flex-1 space-y-2">
-                        <div>
-                          <h4 className="font-playfair font-semibold text-sm line-clamp-2">
-                            {item.productTitle}
-                          </h4>
-                          {item.variantTitle !== 'Default Title' && (
-                            <p className="text-xs text-muted-foreground font-garamond">
-                              {item.variantTitle}
+            ) : (
+              <>
+                <div className="flex-1 overflow-y-auto py-6 min-h-[120px]">
+                  <div className="space-y-6">
+                    {cart.items.map((item) => (
+                      <div key={item.variantId} className="flex gap-4">
+                        <img
+                          src={item.image}
+                          alt={item.productTitle}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                        <div className="flex-1 space-y-2">
+                          <div>
+                            <h4 className="font-garamond font-semibold text-sm line-clamp-2">
+                              {item.productTitle}
+                            </h4>
+                            {item.variantTitle !== 'Default Title' && (
+                              <p className="text-xs text-muted-foreground font-garamond">
+                                {item.variantTitle}
+                              </p>
+                            )}
+                            <p className="font-garamond font-bold text-sm">
+                              {formatPrice(item.price, item.currencyCode)}
                             </p>
-                          )}
-                          <p className="text-xs text-muted-foreground font-mono">
-                            ID: {item.variantId}
-                          </p>
-                          <p className="font-playfair font-bold text-sm">
-                            {formatPrice(item.price, item.currencyCode)}
-                          </p>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-8 text-center font-garamond">
+                                {item.quantity}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => removeFromCart(item.variantId)}
                             >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center font-garamond">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                            >
-                              <Plus className="h-3 w-3" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
-                          
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => removeFromCart(item.variantId)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {checkoutError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription className="text-sm whitespace-pre-wrap">
-                    <strong>Checkout Error:</strong><br />
-                    {checkoutError}
-                  </AlertDescription>
-                </Alert>
-              )}
+                {checkoutError && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertDescription className="text-sm whitespace-pre-wrap">
+                      <strong>Checkout Error:</strong><br />
+                      {checkoutError}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-              {debugInfo && (
-                <Alert className="mb-4">
-                  <AlertDescription className="text-xs font-mono whitespace-pre-wrap">
-                    <strong>Debug Info:</strong><br />
-                    Line Items: {JSON.stringify(debugInfo.lineItems, null, 2)}<br />
-                    Total: {debugInfo.totalItems} items, ${debugInfo.cartTotal}<br />
-                    Time: {debugInfo.timestamp}
-                  </AlertDescription>
-                </Alert>
-              )}
+                {debugInfo && (
+                  <Alert className="mb-4">
+                    <AlertDescription className="text-xs font-mono whitespace-pre-wrap">
+                      <strong>Debug Info:</strong><br />
+                      Line Items: {JSON.stringify(debugInfo.lineItems, null, 2)}<br />
+                      Total: {debugInfo.totalItems} items, ${debugInfo.cartTotal}<br />
+                      Time: {debugInfo.timestamp}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-              {apiTestResult && (
-                <Alert className="mb-4">
-                  <AlertDescription className="text-xs font-mono whitespace-pre-wrap">
-                    <strong>API Test Result:</strong><br />
-                    Success: {apiTestResult.success ? 'Yes' : 'No'}<br />
-                    {apiTestResult.data && (
-                      <>Data: {JSON.stringify(apiTestResult.data, null, 2)}<br /></>
-                    )}
-                    {apiTestResult.error && (
-                      <>Error: {JSON.stringify(apiTestResult.error, null, 2)}<br /></>
-                    )}
-                    Time: {apiTestResult.timestamp}
-                  </AlertDescription>
-                </Alert>
-              )}
+                {apiTestResult && (
+                  <Alert className="mb-4">
+                    <AlertDescription className="text-xs font-mono whitespace-pre-wrap">
+                      <strong>API Test Result:</strong><br />
+                      Success: {apiTestResult.success ? 'Yes' : 'No'}<br />
+                      {apiTestResult.data && (
+                        <>Data: {JSON.stringify(apiTestResult.data, null, 2)}<br /></>
+                      )}
+                      {apiTestResult.error && (
+                        <>Error: {JSON.stringify(apiTestResult.error, null, 2)}<br /></>
+                      )}
+                      Time: {apiTestResult.timestamp}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-              <div className="border-t pt-6 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="font-playfair font-bold text-lg">Total:</span>
-                  <span className="font-playfair font-bold text-lg">
-                    {formatPrice(cart.total, cart.items[0]?.currencyCode)}
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-{/*                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={testApiConnection}
-                    disabled={isTesting}
-                    className="w-full"
+                {/* Sticky footer for actions */}
+                <div className="border-t pt-6 space-y-4 bg-white sticky bottom-0 left-0 right-0 z-10">
+                  <div className="flex justify-between items-center">
+                    <span className="font-garamond font-bold text-lg">Total:</span>
+                    <span className="font-garamond font-bold text-lg">
+                      {formatPrice(cart.total, cart.items[0]?.currencyCode)}
+                    </span>
+                  </div>
+                  <Button
+                    className="w-full bg-black text-white hover:bg-gray-900 transition-opacity font-garamond py-3"
+                    size="lg"
+                    onClick={handleCheckout}
+                    disabled={isCheckingOut}
                   >
-                    <TestTube className="h-4 w-4 mr-2" />
-                    {isTesting ? 'Testing...' : 'Test API'}
-                  </Button> */}
-                  
-{/*                   <Button
+                    {isCheckingOut ? 'Creating Checkout...' : 'Proceed to Checkout'}
+                  </Button>
+                  <Button
                     variant="outline"
-                    size="sm"
-                    onClick={showDebugInfo}
                     className="w-full"
+                    onClick={toggleCart}
                   >
-                    <Bug className="h-4 w-4 mr-2" />
-                    Debug Info
-                  </Button> */}
+                    Continue Shopping
+                  </Button>
                 </div>
-                
-                <Button
-                  className="w-full luxury-gold-gradient text-black hover:opacity-90 transition-opacity font-garamond py-3"
-                  size="lg"
-                  onClick={handleCheckout}
-                  disabled={isCheckingOut}
-                >
-                  {isCheckingOut ? 'Creating Checkout...' : 'Proceed to Checkout'}
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={toggleCart}
-                >
-                  Continue Shopping
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+              </>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+      <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} showSocialLogin />
+    </>
   );
-};
+}

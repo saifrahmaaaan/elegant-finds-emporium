@@ -30,8 +30,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        'playfair': ['Playfair Display', 'serif'],
-        'sans': ['Inter', 'sans-serif'],
+        garamond: ['Garamond', 'serif'],
+        sans: ['Garamond', 'serif'],
+        serif: ['Garamond', 'serif'],
       },
       letterSpacing: {
         tight: '-0.01em',

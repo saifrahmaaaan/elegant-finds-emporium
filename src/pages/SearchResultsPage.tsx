@@ -8,6 +8,9 @@ import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Product } from '@/types/shopify';
 
+import { Header } from '@/components/Header';
+import Footer from '@/components/Footer';
+
 const SearchResultsPage = () => {
   const [params] = useSearchParams();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -30,8 +33,10 @@ const SearchResultsPage = () => {
   };
 
   return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-playfair mb-6">
+    <>
+      <Header />
+      <div className="container py-8">
+        <h1 className="text-3xl font-garamond mb-6">
         {term ? `Results for "${term}"` : 'Search'}
       </h1>
 
@@ -62,7 +67,9 @@ const SearchResultsPage = () => {
         open={!!selectedProduct}
         onOpenChange={(open) => !open && setSelectedProduct(null)}
       />
-    </div>
+      </div>
+      <Footer />
+    </>
   );
 };
 

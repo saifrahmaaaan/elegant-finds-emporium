@@ -3,6 +3,9 @@ import { fetchShopifyCollections } from '@/services/shopify';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import { Header } from '@/components/Header';
+import Footer from '@/components/Footer';
+
 const CollectionsPage = () => {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,8 +35,10 @@ const CollectionsPage = () => {
   }, []);
 
   return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-playfair mb-8">Collections</h1>
+    <>
+      <Header />
+      <div className="container py-8">
+        <h1 className="text-3xl font-garamond mb-8">Collections</h1>
       
       {error && (
         <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">
@@ -59,15 +64,18 @@ const CollectionsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {collections.map((collection) => (
-            <div key={collection.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-              <img 
-                src={collection.image?.url || '/placeholder.jpg'} 
-                alt={collection.title}
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
+            <div key={collection.id} className="border rounded-xl overflow-hidden group bg-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <div className="relative overflow-hidden">
+                <img 
+                  src={collection.image?.url || '/placeholder.jpg'} 
+                  alt={collection.title}
+                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
               <div className="p-4">
-                <h3 className="font-playfair text-xl mb-2">{collection.title}</h3>
+                <h3 className="font-garamond text-xl mb-2">{collection.title}</h3>
                 <p className="text-gray-600 mb-4 line-clamp-2">{collection.description}</p>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">
@@ -75,9 +83,9 @@ const CollectionsPage = () => {
                   </span>
                   <Link 
                     to={`/collections/${collection.handle}`}
-                    className="text-accent hover:text-accent/80 font-garamond"
+                    className="bg-black text-white px-4 py-2 rounded font-garamond text-sm hover:bg-neutral-900 transition-colors"
                   >
-                    View Collection →
+                    View Collection
                   </Link>
                 </div>
               </div>
@@ -94,7 +102,9 @@ const CollectionsPage = () => {
           <span className="text-sm">(Create collections in your Shopify admin)</span>
         </div>
       )}
-    </div>
+      </div>
+      <Footer />
+    </>
   );
 };
 

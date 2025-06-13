@@ -15,6 +15,9 @@ const groupByDesigner = (products: any[]): Record<string, any[]> => {
   return groups;
 };
 
+import { Header } from '@/components/Header';
+import Footer from '@/components/Footer';
+
 const DesignersPage = () => {
   const [designerGroups, setDesignerGroups] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
@@ -46,8 +49,10 @@ const DesignersPage = () => {
   };
 
   return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-playfair mb-8">Designers</h1>
+    <>
+      <Header />
+      <div className="container py-8">
+        <h1 className="text-3xl font-garamond mb-8">Designers</h1>
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
@@ -78,7 +83,9 @@ const DesignersPage = () => {
         open={!!selectedProduct}
         onOpenChange={(open) => !open && setSelectedProduct(null)}
       />
-    </div>
+      </div>
+      <Footer />
+    </>
   );
 };
 

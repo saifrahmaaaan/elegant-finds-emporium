@@ -12,13 +12,18 @@ interface SignupFormProps {
   onClose: () => void;
 }
 
+import { EmailVerificationModal } from './EmailVerificationModal';
+
 export const SignupForm = ({ onModeChange, onClose }: SignupFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [role, setRole] = useState<'buyer' | 'seller'>('buyer');
   const [isLoading, setIsLoading] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -31,11 +36,6 @@ export const SignupForm = ({ onModeChange, onClose }: SignupFormProps) => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            role: role,
-          }
-        }
       });
 
       if (error) {
@@ -46,11 +46,7 @@ export const SignupForm = ({ onModeChange, onClose }: SignupFormProps) => {
           variant: 'destructive',
         });
       } else {
-        toast({
-          title: 'Account Created!',
-          description: 'Please check your email to verify your account.',
-        });
-        onClose();
+        setShowVerification(true);
       }
     } catch (error) {
       console.error('Unexpected signup error:', error);
@@ -64,86 +60,108 @@ export const SignupForm = ({ onModeChange, onClose }: SignupFormProps) => {
     }
   };
 
-  return (
-    <form onSubmit={handleSignup} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="firstName" className="font-garamond">First Name</Label>
-          <Input
-            id="firstName"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            required
-            className="font-garamond"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="lastName" className="font-garamond">Last Name</Label>
-          <Input
-            id="lastName"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            required
-            className="font-garamond"
-          />
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="email" className="font-garamond">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="font-garamond"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="password" className="font-garamond">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="font-garamond"
-        />
-      </div>
+  // Resend confirmation logic
+  const handleResend = async () => {
+    setIsResending(true);
+    setResendSuccess(false);
+    setResendError(null);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      if (error) {
+        setResendError(error.message);
+      } else {
+        setResendSuccess(true);
+      }
+    } catch (err: any) {
+      setResendError('Failed to resend confirmation email.');
+    } finally {
+      setIsResending(false);
+    }
+  };
 
-      <div className="space-y-2">
-        <Label htmlFor="role" className="font-garamond">Account Type</Label>
-        <Select value={role} onValueChange={(value: 'buyer' | 'seller') => setRole(value)}>
-          <SelectTrigger className="font-garamond">
-            <SelectValue placeholder="Select account type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="buyer" className="font-garamond">Buyer</SelectItem>
-            <SelectItem value="seller" className="font-garamond">Seller</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <Button 
-        type="submit" 
-        className="w-full luxury-gold-gradient text-black font-garamond"
-        disabled={isLoading}
-      >
-        {isLoading ? 'Creating Account...' : 'Create Account'}
-      </Button>
-      
-      <div className="text-center">
-        <Button
-          type="button"
-          variant="link"
-          onClick={onModeChange}
-          className="text-accent hover:text-accent/80 font-garamond"
+  return (
+    <>
+      <form onSubmit={handleSignup} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName" className="font-garamond">First Name</Label>
+            <Input
+              id="firstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+              className="font-garamond"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName" className="font-garamond">Last Name</Label>
+            <Input
+              id="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+              className="font-garamond"
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="email" className="font-garamond">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="font-garamond"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="password" className="font-garamond">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="font-garamond"
+          />
+        </div>
+
+
+        
+        <Button 
+          type="submit" 
+          className="w-full bg-black text-white font-garamond hover:bg-black/90"
+          disabled={isLoading}
         >
-          Already have an account? Sign in
+          {isLoading ? 'Creating Account...' : 'Create Account'}
         </Button>
-      </div>
-    </form>
+        
+        <div className="text-center">
+          <Button
+            type="button"
+            variant="link"
+            onClick={onModeChange}
+            className="text-black hover:text-black/80 font-garamond"
+          >
+            Already have an account? Sign in
+          </Button>
+        </div>
+      </form>
+      <EmailVerificationModal
+        open={showVerification}
+        onClose={() => { setShowVerification(false); onModeChange(); }}
+        onResend={handleResend}
+        onReturnToLogin={() => { setShowVerification(false); onModeChange(); }}
+        isResending={isResending}
+        resendSuccess={resendSuccess}
+        resendError={resendError}
+      />
+    </>
   );
 };

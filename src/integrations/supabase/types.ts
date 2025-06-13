@@ -26,6 +26,68 @@ export type Database = {
           role?: string | null
         }
         Relationships: []
+      },
+      newsletter_signups: {
+        Row: {
+          id: string;
+          email: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      },
+      contact_messages: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          subject: string | null;
+          message: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          subject?: string | null;
+          message: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          subject?: string | null;
+          message?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      },
+        Row: {
+          email: string | null
+          id: string
+          role: string | null
+        }
+        Insert: {
+          email?: string | null
+          id: string
+          role?: string | null
+        }
+        Update: {
+          email?: string | null
+          id?: string
+          role?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

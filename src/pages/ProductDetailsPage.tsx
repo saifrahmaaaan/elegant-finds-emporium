@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 
+import { Header } from '@/components/Header';
+import Footer from '@/components/Footer';
+
 const ProductDetailsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -14,7 +17,7 @@ const ProductDetailsPage = () => {
   if (!product) {
     return (
       <div className="container py-8">
-        <h1 className="text-2xl font-playfair">Product not found</h1>
+        <h1 className="text-2xl font-garamond">Product not found</h1>
         <Button 
           className="mt-4"
           onClick={() => navigate('/')}
@@ -44,9 +47,11 @@ const ProductDetailsPage = () => {
   };
 
   return (
-    <div className="container py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Product Images */}
+    <>
+      <Header />
+      <div className="container py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Product Images */}
         <div className="space-y-4">
           <img
             src={product.image}
@@ -67,7 +72,7 @@ const ProductDetailsPage = () => {
 
         {/* Product Info */}
         <div className="space-y-6">
-          <h1 className="text-3xl font-playfair">{product.name}</h1>
+          <h1 className="text-3xl font-garamond">{product.name}</h1>
           <p className="text-2xl font-garamond text-accent">
             {new Intl.NumberFormat('en-US', {
               style: 'currency',
@@ -77,7 +82,7 @@ const ProductDetailsPage = () => {
 
           {product.variants.length > 1 && (
             <div className="space-y-2">
-              <h3 className="font-semibold">Options</h3>
+              <h3 className="font-garamond">Options</h3>
               <div className="flex flex-wrap gap-2">
                 {product.variants.map((variant) => (
                   <Button
@@ -100,14 +105,16 @@ const ProductDetailsPage = () => {
           </Button>
 
           <div className="space-y-4">
-            <h3 className="text-xl font-playfair">Product Details</h3>
-            <p className="text-gray-600 whitespace-pre-line">
+            <h3 className="text-xl font-garamond">Product Details</h3>
+            <p className="text-gray-600 whitespace-pre-line font-garamond">
               {product.description}
             </p>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 
