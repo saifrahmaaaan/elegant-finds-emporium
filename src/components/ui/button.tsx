@@ -21,11 +21,11 @@ const buttonVariants = cva(
         gold: "bg-gradient-to-r from-gold-500 to-gold-600 text-foreground hover:from-gold-600 hover:to-gold-700 hover:shadow-lg hover:-translate-y-0.5"
       },
       size: {
-        default: "h-12 px-6 py-3 text-base rounded-lg",
-        sm: "h-10 px-5 py-2.5 text-sm rounded-lg",
-        lg: "h-14 px-8 py-4 text-lg rounded-xl",
-        xl: "h-16 px-10 py-4 text-lg rounded-xl",
-        icon: "h-12 w-12 rounded-lg",
+        default: "h-12 px-6 py-3 text-base rounded-none",
+        sm: "h-10 px-5 py-2.5 text-sm rounded-none",
+        lg: "h-14 px-8 py-4 text-lg rounded-none",
+        xl: "h-16 px-10 py-4 text-lg rounded-none",
+        icon: "h-12 w-12 rounded-none",
       },
     },
     defaultVariants: {

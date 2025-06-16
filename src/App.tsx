@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ScrollToTop } from '@/components/ScrollToTop';
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import Index from "./pages/Index";
@@ -11,6 +12,7 @@ import NotFound from './pages/NotFound';
 import MyProfilePage from './pages/MyProfilePage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import WishlistPage from './pages/WishlistPage';
+import MyOrdersPage from './pages/MyOrdersPage';
 import CollectionsPage from './pages/CollectionsPage'; 
 import CollectionDetailPage from './pages/CollectionDetailPage';
 import NewArrivalsPage from './pages/NewArrivalsPage';
@@ -25,6 +27,9 @@ import ShippingInfoPage from './pages/ShippingInfoPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsPage from './pages/TermsPage';
+import AddressBookPage from './pages/AddressBookPage';
+import WalletPage from './pages/WalletPage';
+import AccountSettingsPage from './pages/AccountSettingsPage';
 
 const queryClient = new QueryClient();
 
@@ -39,6 +44,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <ScrollToTop />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/about-us" element={<AboutUsPage />} />
@@ -62,9 +68,13 @@ const App = () => {
                 <Route path="/new-arrivals" element={<NewArrivalsPage />} />
                 <Route path="/designers" element={<DesignersPage />} />
                 <Route path="/search" element={<SearchResultsPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="/my-profile" element={<MyProfilePage />} />
+                <Route path="/address-book" element={<AddressBookPage />} />
+                <Route path="/wallet" element={<WalletPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/account-settings" element={<AccountSettingsPage />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="/my-orders" element={<MyOrdersPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

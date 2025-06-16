@@ -21,17 +21,30 @@ const WishlistPage: React.FC = () => {
   const {
     data: products = [],
     isLoading,
-    isError
+    isError,
+    error
   } = useQuery({
-    queryKey: ['wishlist-products', wishlist.map(item => item.productId)],
+    queryKey: ['wishlist-products', wishlist],
     queryFn: async () => {
-      // Import fetchShopifyProductsByIds from services/shopify
-      const { fetchShopifyProductsByIds } = await import('@/services/shopify');
-      return wishlist.length > 0 ? fetchShopifyProductsByIds(wishlist.map(item => item.productId)) : [];
+      if (!wishlist || wishlist.length === 0) return [];
+      
+      console.log('Fetching products for wishlist IDs:', wishlist.map(item => item.productId));
+      
+      try {
+        const { fetchShopifyProductsByIds } = await import('@/services/shopify');
+        const products = await fetchShopifyProductsByIds(wishlist.map(item => item.productId));
+        console.log('Fetched products:', products);
+        return products;
+      } catch (err) {
+        console.error('Error fetching wishlist products:', err);
+        throw err;
+      }
     },
     enabled: wishlist.length > 0,
     staleTime: 5 * 60 * 1000,
   });
+  
+  console.log('Wishlist state:', { wishlist, products, isLoading, isError, error });
 
     return (
     <>

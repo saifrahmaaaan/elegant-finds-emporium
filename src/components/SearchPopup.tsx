@@ -43,7 +43,14 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
   );
 
   const popup = (
-    <div className="fixed top-6 right-6 z-[10000] bg-white shadow-2xl rounded-xl w-full max-w-xl border border-gray-200 animate-fade-in flex flex-col p-8" style={{ overflow: 'visible' }} onClick={e => e.stopPropagation()}>
+    <div
+      className="ef-search-popup fixed z-[10000] bg-white shadow-2xl border border-gray-200 animate-fade-in duration-150 flex flex-col rounded-none w-full max-w-[calc(100vw-1rem)] mx-auto left-0 right-0 mt-4 sm:rounded-none sm:w-full sm:max-w-xl sm:mx-0 sm:top-6 sm:right-6 sm:left-auto sm:mt-0 p-4"
+      style={{
+        top: '1.5rem',
+        overflow: 'visible',
+        minWidth: 0,
+      }}
+      onClick={e => e.stopPropagation()}>
       <form onSubmit={onSubmit} className="flex items-center gap-4 mb-4">
         <input
           ref={inputRef}
@@ -51,9 +58,18 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
           placeholder="What are you looking for?"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          className="w-full pl-2 pr-4 py-4 text-lg bg-background border border-border rounded-lg shadow-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent font-garamond placeholder:text-muted-foreground"
+          className="w-full pl-2 pr-3 py-3 text-lg bg-background border-0 border-b border-black rounded-none shadow-none focus:outline-none focus:ring-0 focus:border-black font-garamond placeholder:text-muted-foreground"
         />
-        <Button type="button" variant="ghost" size="sm" onClick={onClose} className="ml-2">Cancel</Button>
+        <button 
+          type="button" 
+          onClick={onClose} 
+          className="relative text-foreground hover:text-foreground ml-2 px-2 py-1 group"
+        >
+          <span className="relative">
+            Cancel
+            <span className="absolute bottom-0 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full"></span>
+          </span>
+        </button>
       </form>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
@@ -61,8 +77,15 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
           <ul className="space-y-2 text-base">
             {trending.length > 0 ? trending.map((term, idx) => (
               <li key={term + idx}>
-                <a href={`/search?q=${encodeURIComponent(term)}`} className="hover:underline flex items-center gap-2">
-                  <span className="inline-block w-4 h-4 rounded-full border border-gold mr-2" />{term}
+                <a 
+                  href={`/search?q=${encodeURIComponent(term)}`} 
+                  className="relative flex items-center gap-2 group text-foreground hover:text-foreground"
+                >
+                  <span className="inline-block w-4 h-4 rounded-full border border-gold mr-2" />
+                  <span className="relative">
+                    {term}
+                    <span className="absolute bottom-0 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full"></span>
+                  </span>
                 </a>
               </li>
             )) : (
@@ -78,14 +101,19 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
             ) : (
               collections.length > 0 ? collections.map(col => (
                 <li key={col.id}>
-                  <a href={`/collections/${col.handle}`} className="hover:underline">{col.title}</a>
+                  <a 
+                    href={`/collections/${col.handle}`} 
+                    className="relative group text-foreground hover:text-foreground"
+                  >
+                    {col.title}
+                    <span className="absolute bottom-0 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full"></span>
+                  </a>
                 </li>
               )) : <li className="text-gray-400">No collections</li>
             )}
           </ul>
         </div>
       </div>
-      <button onClick={onClose} aria-label="Close" className="absolute top-4 right-4 text-gray-500 hover:text-black text-xl">×</button>
     </div>
   );
 
