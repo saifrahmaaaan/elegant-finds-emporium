@@ -113,7 +113,7 @@ export const Hero: React.FC = () => {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen w-full flex items-center justify-center overflow-hidden luxury-hero-bg"
+      className="relative min-h-screen w-full flex items-center justify-center overflow-hidden luxury-hero-bg max-w-full"
     >
       {/* Cinematic full-screen fallback image background with smooth zoom-out effect */}
       <div
@@ -132,8 +132,8 @@ export const Hero: React.FC = () => {
 
       {/* Hero headline and description in a blurred/glassmorphic box */}
       <div className="relative z-20 flex flex-col items-center justify-center w-full h-[60vh] text-center px-4 mt-32">
-        <div className="backdrop-blur-lg bg-white/30 rounded-2xl shadow-xl px-8 py-10 flex flex-col items-center max-w-xl mx-auto border border-white/40">
-          <h1 className="text-5xl md:text-7xl font-garamond font-bold text-white mb-4 text-center drop-shadow-lg">Elegant Finds</h1>
+        <div className="backdrop-blur-lg bg-white/30 rounded-2xl shadow-xl px-4 md:px-8 py-10 flex flex-col items-center max-w-full md:max-w-xl mx-auto border border-white/40">
+          <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 text-center drop-shadow-lg">Elegant Finds</h1>
           <p className="text-lg md:text-2xl font-garamond text-gray-700 text-center mb-2">
             Discover timeless luxury. Curated designer handbags & accessories for the discerning collector.
           </p>

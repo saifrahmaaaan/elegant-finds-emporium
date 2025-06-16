@@ -18,11 +18,9 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <MorphingBrand onMorphDone={handleMorphDone} onMorphStart={handleMorphStart} />
-      <Header showNavbarLogo={showNavbarLogo} />
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header showNavbarLogo={false} />
       <Hero />
-      <FeaturedDesigners />
       <Footer />
     </div>
   );

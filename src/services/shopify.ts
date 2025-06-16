@@ -83,11 +83,52 @@ export const fetchShopifyProducts = async (first: number = 12): Promise<Product[
 
 // Fetch a batch of products by Shopify product IDs (for wishlist)
 export const fetchShopifyProductsByIds = async (ids: string[]): Promise<Product[]> => {
-  if (!ids || ids.length === 0) return [];
-  // For now, fetch all products and filter (Shopify Storefront API does not support direct batch lookup by IDs)
-  // In production, use a better approach or cache
-  const allProducts = await fetchShopifyProducts(100);
-  return allProducts.filter(p => ids.includes(p.id));
+  try {
+    console.log('Fetching products by IDs:', ids);
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      console.log('No valid product IDs provided');
+      return [];
+    }
+
+    // Clean and validate IDs
+    const validIds = ids
+      .map(id => {
+        // Extract just the numeric ID if it's in the format 'gid://shopify/Product/1234567890'
+        const match = id.match(/\/(\d+)$/);
+        return match ? match[1] : id;
+      })
+      .filter(Boolean);
+
+    if (validIds.length === 0) {
+      console.log('No valid product IDs after cleaning');
+      return [];
+    }
+
+    console.log('Cleaned product IDs:', validIds);
+
+    // Fetch all products and filter by the requested IDs
+    const allProducts = await fetchShopifyProducts(100);
+    
+    // Match products by ID (handling both full GID and numeric ID)
+    const matchedProducts = allProducts.filter(p => {
+      // Extract numeric ID from the product's GID
+      const productIdMatch = p.id.match(/\/(\d+)$/);
+      const productNumericId = productIdMatch ? productIdMatch[1] : p.id;
+      
+      return validIds.some(id => 
+        id === p.id || // Match full GID
+        id === productNumericId || // Match numeric ID
+        p.id.endsWith(`/${id}`) // Match if ID is at the end of GID
+      );
+    });
+
+    console.log(`Found ${matchedProducts.length} matching products`);
+    return matchedProducts;
+  } catch (error) {
+    console.error('Error in fetchShopifyProductsByIds:', error);
+    throw error;
+  }
 };
 
 const transformShopifyProduct = (shopifyProduct: ShopifyProduct): Product => {

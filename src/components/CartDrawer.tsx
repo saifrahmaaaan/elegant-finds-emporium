@@ -397,10 +397,9 @@ export const CartDrawer = () => {
                   <Button
                     className="w-full bg-black text-white hover:bg-gray-900 transition-opacity font-garamond py-3"
                     size="lg"
-                    onClick={handleCheckout}
-                    disabled={isCheckingOut}
+                    onClick={toggleCart}
                   >
-                    {isCheckingOut ? 'Creating Checkout...' : 'Proceed to Checkout'}
+                    Proceed to Checkout
                   </Button>
                   <Button
                     variant="outline"

@@ -6,11 +6,13 @@ import { useCart } from '@/contexts/CartContext';
 interface CartPopupProps {
   open: boolean;
   onClose: () => void;
-  onCheckout: () => void;
   onViewCart: () => void;
 }
 
-export const CartPopup: React.FC<CartPopupProps> = ({ open, onClose, onCheckout, onViewCart }) => {
+import { useCartCheckoutHandler } from './CartPopupCheckoutHandler';
+
+export const CartPopup: React.FC<CartPopupProps> = ({ open, onClose, onViewCart }) => {
+  const handleCheckout = useCartCheckoutHandler();
   const { cart } = useCart();
   if (!open) return null;
   // Outside click backdrop
@@ -25,7 +27,14 @@ export const CartPopup: React.FC<CartPopupProps> = ({ open, onClose, onCheckout,
     return ReactDOM.createPortal(
       <>
         {backdrop}
-        <div className="fixed top-6 right-6 z-[10000] bg-white shadow-2xl rounded-xl w-full max-w-sm border border-gray-200 animate-fade-in flex flex-col items-center justify-center p-8" onClick={e => e.stopPropagation()}>
+        <div
+          className="ef-cart-popup fixed z-[10000] bg-white shadow-2xl border border-gray-200 animate-fade-in duration-150 flex flex-col items-center justify-center rounded-none w-full max-w-[calc(100vw-1rem)] mx-auto left-0 right-0 mt-4 sm:rounded-none sm:w-full sm:max-w-sm sm:mx-0 sm:top-6 sm:right-6 sm:left-auto sm:mt-0 p-4"
+          style={{
+            top: '1.5rem',
+            overflow: 'visible',
+            minWidth: 0,
+          }}
+          onClick={e => e.stopPropagation()}>
           <span className="font-garamond font-semibold text-lg text-black mb-2">No items in your cart yet.</span>
           <a href="/" className="mt-2 w-full">
             <Button className="w-full bg-black text-white hover:bg-gray-900">Continue Shopping</Button>
@@ -43,8 +52,13 @@ export const CartPopup: React.FC<CartPopupProps> = ({ open, onClose, onCheckout,
   // Popup content
   const popup = (
     <div
-      className="fixed top-6 right-6 z-[10000] bg-white shadow-2xl rounded-xl w-full max-w-sm border border-gray-200 animate-fade-in"
-      style={{ overflow: 'visible' }}
+      className="ef-cart-popup fixed z-[10000] bg-white shadow-2xl border border-gray-200 animate-fade-in duration-150 flex flex-col rounded-none w-full max-w-[calc(100vw-1rem)] mx-auto left-0 right-0 mt-4 sm:rounded-none sm:w-full sm:max-w-sm sm:mx-0 sm:top-6 sm:right-6 sm:left-auto sm:mt-0"
+      style={{
+        top: '1.5rem',
+        overflow: 'visible',
+        padding: 0,
+        minWidth: 0,
+      }}
       onClick={e => e.stopPropagation()}
     >
       <div className="flex justify-between items-center border-b px-6 py-4 z-[100] relative bg-white">
@@ -79,7 +93,7 @@ export const CartPopup: React.FC<CartPopupProps> = ({ open, onClose, onCheckout,
         ))}
       </div>
       <div className="px-6 pb-6 pt-2 flex flex-col gap-2">
-        <Button className="w-full bg-black text-white hover:bg-gray-900" onClick={onCheckout}>Checkout</Button>
+        <Button className="w-full bg-black text-white hover:bg-gray-900" onClick={handleCheckout}>Checkout</Button>
         <Button className="w-full border border-black bg-white text-black hover:bg-gray-100" onClick={onViewCart}>View Shopping Bag</Button>
       </div>
     </div>

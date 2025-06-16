@@ -26,7 +26,18 @@ export const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, showS
   );
 
   const popup = (
-    <div className="fixed top-6 right-6 z-[10000] bg-white shadow-2xl rounded-xl w-full max-w-md border border-gray-200 animate-fade-in flex flex-col p-8" style={{ overflow: 'visible' }} onClick={e => e.stopPropagation()}>
+    <div
+      className="ef-profile-popup fixed z-[10000] bg-white shadow-2xl border border-gray-200 animate-fade-in duration-150 flex flex-col rounded-none w-full max-w-[calc(100vw-1rem)] mx-auto left-0 right-0 mt-4 sm:rounded-none sm:w-full sm:max-w-md sm:mx-0 sm:top-6 sm:right-6 sm:left-auto sm:mt-0 p-4"
+      style={{
+        top: '1.5rem',
+        right: undefined,
+        left: undefined,
+        marginLeft: undefined,
+        marginRight: undefined,
+        overflow: 'visible',
+        minWidth: 0,
+      }}
+      onClick={e => e.stopPropagation()}>
       <div className="flex justify-between items-center mb-4">
         <span className="font-garamond font-bold text-lg text-black">{mode === 'login' ? 'Welcome Back' : 'Create Account'}</span>
         <button onClick={onClose} aria-label="Close" className="text-gray-500 hover:text-black text-xl">×</button>
@@ -35,7 +46,7 @@ export const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, showS
         <div className="flex flex-col gap-3 mb-4">
           <button
             onClick={async () => { await supabase.auth.signInWithOAuth({ provider: 'google' }); }}
-            className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2 bg-white hover:bg-gray-50 font-medium text-base text-gray-700"
+            className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-none px-3 py-2 bg-white hover:bg-gray-50 font-medium text-base text-gray-700"
           >
             <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
             Continue with Google

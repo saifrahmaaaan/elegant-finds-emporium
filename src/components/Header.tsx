@@ -17,7 +17,7 @@ import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
-import { Link, useNavigate } from 'react-router-dom';  
+import { Link, useNavigate, useLocation } from 'react-router-dom';  
 
 import { fetchShopifyCollections } from '@/services/shopify';
 
@@ -173,37 +173,61 @@ export const Header = ({ showNavbarLogo }: { showNavbarLogo?: boolean }) => {
   };
 
   // Scroll state for navbar/hero transitions
-  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
+  
+  const [scrolled, setScrolled] = useState(!isHomePage);
   // Announcement bar fade state
-  const [announceWhite, setAnnounceWhite] = useState(false);
+  const [announceWhite, setAnnounceWhite] = useState(!isHomePage);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 0);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    if (isHomePage) {
+      const onScroll = () => setScrolled(window.scrollY > 0);
+      window.addEventListener('scroll', onScroll);
+      return () => window.removeEventListener('scroll', onScroll);
+    } else {
+      setScrolled(true);
+      setAnnounceWhite(true);
+    }
+  }, [isHomePage]);
+
   useEffect(() => {
-    const timer = setTimeout(() => setAnnounceWhite(true), 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (isHomePage) {
+      const timer = setTimeout(() => setAnnounceWhite(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isHomePage]);
 
   return (
     <>
-      {/* Announcement Bar */}
-      <div className={`w-full text-center text-xs font-garamond uppercase py-2 transition-colors duration-700 ${announceWhite ? 'bg-white text-black' : 'bg-neutral-900 text-white'}`}
-        style={{letterSpacing: '0.05em'}}>
-        New Arrivals Alert: Shop the Latest Trends Now!
-      </div>
+      {/* Announcement Bar - Only on homepage */}
+      {isHomePage && (
+        <div 
+          className={`w-full max-w-full text-center text-xs font-garamond uppercase h-[63px] flex items-center justify-center transition-none ${scrolled ? 'hidden' : ''} ${announceWhite ? 'bg-white text-black' : 'bg-neutral-900 text-white'}`}
+          style={{ letterSpacing: '0.05em', overflowX: 'hidden' }}
+        >
+          <span>New Arrivals Alert: Shop the Latest Trends Now!</span>
+        </div>
+      )}
+      
       <header
-        className={`z-50 w-full left-0 transition-all duration-700 ${scrolled ? 'sticky top-0 bg-white border-b border-border shadow-sm' : 'absolute'} ${scrolled ? '' : 'top-6 sm:top-8'}`}
+        className={`w-full max-w-full left-0 transition-all duration-[1400ms] h-16 overflow-y-hidden ${
+          isHomePage 
+            ? scrolled 
+              ? 'sticky top-0 bg-white border-b border-border shadow-sm z-50' 
+              : 'absolute top-[63px] z-40 bg-transparent'
+            : 'sticky top-0 bg-white border-b border-border shadow-sm z-50'
+        }`}
         style={{
-          backdropFilter: scrolled ? 'blur(8px)' : 'none',
-        }}
+    transition: 'all 1.4s cubic-bezier(.4,2,.3,1)',
+    backdropFilter: scrolled ? 'blur(8px)' : 'none',
+    overflowY: 'hidden',
+  }}
       >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative flex items-center h-20 w-full">
+        <div className="w-full max-w-full px-2 sm:px-6 lg:px-8 mx-auto" style={{ overflowX: 'hidden' }}>
+          <div className="relative flex items-center h-16 w-full max-w-full overflow-x-hidden overflow-y-hidden">
             {/* Left spacer to keep icons right-aligned when logo is absolute */}
-            <div className="min-w-[180px]" />
+            <div className="hidden sm:block min-w-[180px]" />
 
             {/* Logo - will be controlled by Hero component for scroll animation */}
             <div className={`transition-all duration-700 flex-1 flex items-center justify-center ${scrolled ? 'relative' : 'absolute left-0 top-0 w-full h-20 pointer-events-none'}`}
@@ -257,7 +281,7 @@ export const Header = ({ showNavbarLogo }: { showNavbarLogo?: boolean }) => {
             </div>
 
             {/* Right side icons - always right-aligned, color changes with scroll */}
-            <div className="flex items-center space-x-4 ml-auto" style={{ color: scrolled ? '#000' : '#fff', transition: 'color 0.6s cubic-bezier(.4,2,.3,1)' }}>
+            <div className="flex items-center space-x-1 sm:space-x-4 ml-auto max-w-full" style={{ color: scrolled ? '#000' : '#fff', transition: 'color 0.6s cubic-bezier(.4,2,.3,1)', zIndex: 51 }}>
               {/* Wishlist Heart Icon */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -265,16 +289,16 @@ export const Header = ({ showNavbarLogo }: { showNavbarLogo?: boolean }) => {
                     variant="ghost"
                     size="icon"
                     aria-label="Wishlist"
-                    className="hover:text-accent"
+                    className={`hover:bg-transparent ${!scrolled ? 'text-white' : 'text-foreground'}`}
                     onClick={() => {
                       if (user) {
                         navigate('/wishlist');
                       } else {
-                        setAuthDialogOpen(true);
+                        setProfilePopupOpen(true);
                       }
                     }}
                   >
-                    <Heart className="h-5 w-5" />
+                    <Heart className="w-6 h-6" strokeWidth={2.2} style={{ color: scrolled ? '#000' : '#fff' }} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Wishlist</TooltipContent>
@@ -287,10 +311,10 @@ export const Header = ({ showNavbarLogo }: { showNavbarLogo?: boolean }) => {
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsSearchOpen(true)}
-                    className="hover:text-accent"
+                    className={`hover:bg-transparent ${!scrolled ? 'text-white' : 'text-foreground'}`}
                     aria-label="Search"
                   >
-                    <Search className="h-5 w-5" />
+                    <Search className="w-6 h-6" strokeWidth={2.2} style={{ color: scrolled ? '#000' : '#fff' }} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Search</TooltipContent>
@@ -303,21 +327,21 @@ export const Header = ({ showNavbarLogo }: { showNavbarLogo?: boolean }) => {
                     variant="ghost"
                     size="icon"
                     onClick={handleCartIconClick}
-                    className="relative hover:text-accent"
+                    className={`relative hover:bg-transparent ${!scrolled ? 'text-white' : 'text-foreground'}`}
                     aria-label="Cart"
                   >
-                    <ShoppingBag className="h-5 w-5" />
+                    <ShoppingBag className="w-6 h-6" strokeWidth={2.2} style={{ color: scrolled ? '#000' : '#fff', zIndex: 51 }} />
                     {Array.isArray(cart) && cart.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-accent text-white text-xs rounded-full px-1.5 py-0.5 font-bold">
-                        {cart.length}
-                      </span>
-                    )}
+  <span className="absolute top-1 right-0 text-xs font-bold select-none" style={{ color: scrolled ? '#000' : '#fff', background: 'none', borderRadius: 0, padding: 0, minWidth: '1.25rem', textAlign: 'center', lineHeight: 1, fontSize: '0.5rem' }}>
+  {cart.length}
+</span>
+)}
                     {/* If cart is object with items array, use cart.items.length instead */}
                     {cart.items && cart.items.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-accent text-white text-xs rounded-full px-1.5 py-0.5 font-bold">
-                        {cart.items.length}
-                      </span>
-                    )}
+  <span className="absolute top-1 right-0 text-xs font-bold select-none" style={{ color: scrolled ? '#000' : '#fff', background: 'none', borderRadius: 0, padding: 0, minWidth: '1.25rem', textAlign: 'center', lineHeight: 1, fontSize: '0.5rem' }}>
+  {cart.items.length}
+</span>
+)}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Cart</TooltipContent>
@@ -327,24 +351,85 @@ export const Header = ({ showNavbarLogo }: { showNavbarLogo?: boolean }) => {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="hover:text-accent">
-                      <Avatar>
-                        <AvatarFallback>
-                          {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                        </AvatarFallback>
-                      </Avatar>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={`hover:bg-transparent ${!scrolled ? 'text-white' : 'text-foreground'}`}
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center">
+                        {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                      </span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate('/my-profile')} className="font-garamond">My Profile</DropdownMenuItem>
-                    {user.email && (
-                      <DropdownMenuItem disabled>
-                        <span className="text-xs text-gray-500">{user.email}</span>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={() => setPasswordResetDialogOpen(true)} className="font-garamond">Reset Password</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="text-red-600 font-garamond cursor-pointer">Sign Out</DropdownMenuItem>
+                  <DropdownMenuContent 
+                    align="end" 
+                    className="w-56 p-2 bg-white border border-gray-200 shadow-2xl rounded-none"
+                  >
+                    <DropdownMenuItem 
+                      onClick={() => navigate('/my-profile')} 
+                      className="px-3 py-2 text-sm font-garamond cursor-pointer group focus:bg-transparent focus:text-foreground hover:bg-transparent [&>span]:focus:bg-transparent"
+                    >
+                      <span className="relative">
+                        My Profile
+                        <span className="absolute bottom-0 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full"></span>
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => navigate('/my-orders')} 
+                      className="px-3 py-2 text-sm font-garamond cursor-pointer group focus:bg-transparent focus:text-foreground hover:bg-transparent [&>span]:focus:bg-transparent"
+                    >
+                      <span className="relative">
+                        My Orders
+                        <span className="absolute bottom-0 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full"></span>
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => navigate('/account-settings')} 
+                      className="px-3 py-2 text-sm font-garamond cursor-pointer group focus:bg-transparent focus:text-foreground hover:bg-transparent [&>span]:focus:bg-transparent"
+                    >
+                      <span className="relative">
+                        Account Settings
+                        <span className="absolute bottom-0 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full"></span>
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => navigate('/address-book')} 
+                      className="px-3 py-2 text-sm font-garamond cursor-pointer group focus:bg-transparent focus:text-foreground hover:bg-transparent [&>span]:focus:bg-transparent"
+                    >
+                      <span className="relative">
+                        Address Book
+                        <span className="absolute bottom-0 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full"></span>
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => navigate('/wallet')} 
+                      className="px-3 py-2 text-sm font-garamond cursor-pointer group focus:bg-transparent focus:text-foreground hover:bg-transparent [&>span]:focus:bg-transparent"
+                    >
+                      <span className="relative">
+                        Wallet
+                        <span className="absolute bottom-0 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full"></span>
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1" />
+                    <DropdownMenuItem 
+                      onClick={() => setPasswordResetDialogOpen(true)} 
+                      className="px-3 py-2 text-sm font-garamond text-gray-600 cursor-pointer group focus:bg-transparent focus:text-gray-600 hover:bg-transparent [&>span]:focus:bg-transparent"
+                    >
+                      <span className="relative">
+                        Reset Password
+                        <span className="absolute bottom-0 left-0 w-0 h-px bg-gray-600 transition-all duration-300 group-hover:w-full"></span>
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1" />
+                    <DropdownMenuItem 
+                      onClick={handleSignOut} 
+                      className="px-3 py-2 text-sm font-garamond text-red-600 cursor-pointer group focus:bg-transparent focus:text-red-600 hover:bg-transparent [&>span]:focus:bg-transparent"
+                    >
+                      <span className="relative">
+                        Sign Out
+                        <span className="absolute bottom-0 left-0 w-0 h-px bg-red-600 transition-all duration-300 group-hover:w-full"></span>
+                      </span>
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
@@ -355,7 +440,7 @@ export const Header = ({ showNavbarLogo }: { showNavbarLogo?: boolean }) => {
                     onClick={() => setProfilePopupOpen(true)}
                     className="hover:text-accent"
                   >
-                    <User className="h-5 w-5" />
+                    <User className="w-6 h-6" strokeWidth={2.2} style={{ color: scrolled ? '#000' : '#fff', zIndex: 51 }} />
                   </Button>
                   <ProfilePopup
                     open={profilePopupOpen}
@@ -374,7 +459,7 @@ export const Header = ({ showNavbarLogo }: { showNavbarLogo?: boolean }) => {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         onSubmit={handleSearchSubmit}
-        trending={["Handbags", "Shoes", "Belts", "Bags"]}
+        trending={["Handbags", "Clutches", "Leather Bags", "Bags"]}
         collections={collections}
         loadingCollections={collectionsLoading}
       />
@@ -391,8 +476,10 @@ export const Header = ({ showNavbarLogo }: { showNavbarLogo?: boolean }) => {
       <CartPopup
         open={cartPopupOpen}
         onClose={() => setCartPopupOpen(false)}
-        onCheckout={handleCheckout}
-        onViewCart={handleViewCart}
+        onViewCart={() => {
+          setCartPopupOpen(false);
+          navigate('/cart');
+        }}
       />
       <CartDrawer />
     </>
