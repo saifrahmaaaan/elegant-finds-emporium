@@ -1,8 +1,7 @@
 
 import { Header } from '@/components/Header';
 import { Hero } from '@/components/Hero';
-import { FeaturedDesigners } from '@/components/FeaturedDesigners';
-import { MorphingBrand } from '@/components/MorphingBrand';
+import { FeaturedCollections } from '@/components/FeaturedCollections';
 import Footer from '@/components/Footer';
 import React, { useState, useCallback } from 'react';
 
@@ -20,7 +19,10 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header showNavbarLogo={false} />
-      <Hero />
+      <main className="flex-1">
+        <Hero />
+        <FeaturedCollections />
+      </main>
       <Footer />
     </div>
   );
