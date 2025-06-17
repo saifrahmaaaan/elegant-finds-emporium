@@ -134,8 +134,8 @@ export const Hero: React.FC = () => {
       <div className="relative z-20 flex flex-col items-center justify-center w-full h-[60vh] text-center mt-32">
         <div className="w-full backdrop-blur-lg bg-white/30 shadow-xl px-4 md:px-8 py-10 flex flex-col items-center border-t border-b border-white/40">
           <div className="w-full max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 text-center drop-shadow-lg">Elegant Finds</h1>
-            <p className="text-lg md:text-2xl text-gray-200 text-center mb-2">
+            <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 text-center drop-shadow-lg" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>Elegant Finds</h1>
+            <p className="text-lg md:text-2xl text-gray-200 text-center mb-2" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
               Discover timeless luxury. Curated designer handbags & accessories for the discerning collector.
             </p>
           </div>

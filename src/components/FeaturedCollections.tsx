@@ -84,7 +84,7 @@ export const FeaturedCollections = () => {
     return (
       <section className="py-12 bg-background w-full overflow-hidden">
         <div className="w-full px-0">
-          <h2 className="text-2xl font-bold mb-8 text-center">Featured Collections</h2>
+          <h2 className="text-2xl font-garamond font-bold mb-8 text-center">Featured Collections</h2>
           <div className="flex space-x-4 overflow-hidden px-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="flex-shrink-0 w-[320px] h-[320px] relative">
