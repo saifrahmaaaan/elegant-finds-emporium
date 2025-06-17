@@ -32,7 +32,7 @@ const MyProfilePage: React.FC = () => {
           {/* Navigation Buttons */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 w-full mb-8">
             <div className="flex flex-col items-center">
-              <button onClick={() => navigate('/orders')} className="group relative font-garamond font-semibold focus:outline-none">
+              <button onClick={() => navigate('/my-orders')} className="group relative font-garamond font-semibold focus:outline-none">
                 <span className="relative">
                   My Orders
                   <span className="absolute bottom-0 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full"></span>

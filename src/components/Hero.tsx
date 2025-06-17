@@ -130,29 +130,45 @@ export const Hero: React.FC = () => {
       {/* Parallax gold shimmer overlay */}
       <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-br from-[#f8f6f000] via-[#f8f6f033] to-[#d4af3780] mix-blend-lighten animate-parallax-gold" />
 
-      {/* Hero headline and description in a blurred/glassmorphic box */}
-      <div className="relative z-20 flex flex-col items-center justify-center w-full h-[60vh] text-center px-4 mt-32">
-        <div className="backdrop-blur-lg bg-white/30 rounded-2xl shadow-xl px-4 md:px-8 py-10 flex flex-col items-center max-w-full md:max-w-xl mx-auto border border-white/40">
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 text-center drop-shadow-lg">Elegant Finds</h1>
-          <p className="text-lg md:text-2xl font-garamond text-gray-700 text-center mb-2">
-            Discover timeless luxury. Curated designer handbags & accessories for the discerning collector.
-          </p>
+      {/* Hero headline and description in a full-width blurred/glassmorphic box */}
+      <div className="relative z-20 flex flex-col items-center justify-center w-full h-[60vh] text-center mt-32">
+        <div className="w-full backdrop-blur-lg bg-white/30 shadow-xl px-4 md:px-8 py-10 flex flex-col items-center border-t border-b border-white/40">
+          <div className="w-full max-w-4xl mx-auto">
+            <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 text-center drop-shadow-lg">Elegant Finds</h1>
+            <p className="text-lg md:text-2xl text-gray-200 text-center mb-2">
+              Discover timeless luxury. Curated designer handbags & accessories for the discerning collector.
+            </p>
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-5 justify-center z-20 relative mt-16">
           <Button
-            asChild
+            onClick={(e) => {
+              e.preventDefault();
+              const featuredSection = document.getElementById('featured-collections');
+              if (featuredSection) {
+                featuredSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
             size="xl"
-            className="luxury-gold-gradient text-black hover:luxury-gold-hover transition-all font-inter shadow-xl px-10 py-4 text-lg rounded-full luxury-btn-animate border-2 border-gold"
+            className="bg-transparent border-2 border-white text-white hover:bg-transparent hover:text-white font-inter shadow-xl px-10 py-4 text-lg rounded-none luxury-btn-animate group relative overflow-visible"
           >
-            <Link to="/collections">Explore Collections</Link>
+            <span className="relative inline-flex items-center justify-center">
+              Explore Collections
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+            </span>
           </Button>
           <Button
             asChild
             variant="outline"
             size="xl"
-            className="border-gold text-gold hover:bg-gold/10 font-inter shadow px-10 py-4 text-lg rounded-full luxury-btn-animate border-2"
+            className="border-white text-white hover:bg-transparent hover:text-white font-inter shadow px-10 py-4 text-lg rounded-none luxury-btn-animate border-2 group relative overflow-visible"
           >
-            <Link to="/new-arrivals">New Arrivals</Link>
+            <Link to="/new-arrivals" className="relative inline-flex items-center justify-center h-full">
+              <span className="relative z-10">
+                New Arrivals
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+              </span>
+            </Link>
           </Button>
         </div>
       </div>
